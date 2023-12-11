@@ -1,130 +1,109 @@
 import sqlite3
 import random
 
+# This file generates the string for SQL queries and executes them based on the following steps:
+# - Generate 10 SQL queries of parlays from the NBA statistics and odds database 
+#   created with espn_api.py (nba_stats.db) with the following requirements:
+#   - For ~8 of these queries, search for negative odds picks (liklier to happen)
+#   - For the remaining ~2 queries, search for positive odds between 0 and 120 (less likely)
+#   - Query randomly for points, assists, or rebounds where the average value is higher than the sportsbook's predicted value
+# - Using the returned entries that meet the above criteria, group them randomly into groups of 5
+# - Filter each group down to only valid bets for the sportsbook
+# - Return the list of remaining parlays sorted by length (number of legs)
+
+# Connect to the NBA stats database
 conn = sqlite3.connect('nba_stats.db')
 cursor = conn.cursor()
 
-types = ["rebounds", "assists", "points"]
-bet = "over"
-symbol = ["<", ">"]
-
+# Array to store picks
 total_picks = []
 
-for i in range(10):
-    risk = random.random()
+# This method creates the 'query string' used to extract data from the NBA statsistics database
+def create_query():
+    score_type = random.choice(["rebounds", "assists", "points"])
+    identifier=score_type[0]
+    mark = "p{id}g".format(id=identifier)
 
-    query_string = ""
-    mark = "ppg"
-    symbol_choice = "<"
-    tail = "0"
-
-    score_type = random.choice(types)
-    bet_type = "over"
-
-    if score_type == 'points':
-        mark = "ppg"
-    elif score_type == 'rebounds':
-        mark = "prg"
-    else:
-        mark="pag"
-
-    if risk < 0.2:
-        # Greater than 0 less than 120
-        symbol_choice = symbol[1]
-        tail = "0 AND {mark}_{bet} < 120".format(mark=mark, bet=bet_type)
-        
-    else:
-        symbol_choice = symbol[0]
-        tail = "0"
+    
+    outcomes = ["< 0", "> 0 AND {mark}_over < 120".format(mark=mark)]
+    outcome = random.choices(outcomes,cum_weights=[0.8, 0.2], k=1)
 
     query_string = """
     
-        SELECT player_name, avg_{type}, predicted_{type}, {mark}_{bet} FROM nba_statistics
-        WHERE avg_{type} > predicted_{type} AND {mark}_{bet} {symbol} {tail};
+        SELECT player_name, avg_{type}, predicted_{type}, {mark}_over FROM nba_statistics
+        WHERE avg_{type} > predicted_{type} AND {mark}_over {tail};
 
-    """.format(type=score_type, mark=mark, bet=bet_type, symbol=symbol_choice, tail=tail)
+    """.format(type=score_type, mark=mark, tail=outcome)
 
-    #print(query_string)
+    return [query_string, score_type]
 
+# Iterate 10 times, creating a query each time that randomly picks valid
+# entires that meet the criteria of being < 0 odds (likely) 80% of the time or between 
+# 0-120 (less likely, more money) and between querying for points, 
+# rebounds, and assists that meet the criteria
+for i in range(10):
 
-# Create a table to store the statistics
-    #print(score_type + " " + bet_type)
-    cursor.execute(query_string)
+    query_pair = create_query()
+
+    cursor.execute(query_pair[0])
     result = cursor.fetchall()
-    #result.append(score_type + "-" + bet_type)
-    #print(result)
+
     for pick in result:
-        bet_string = score_type + "-" + bet_type
+        bet_string = query_pair[1] + "-over"
         pick = pick + tuple([bet_string])
         total_picks.append(pick)
 
-def myFunc(e):
-  return e[3]
-
-total_picks.sort(key=myFunc, reverse=True)
-
-#print(total_picks)
+# Calculate total picks generated and the number of parlays to create (picks / 5 legs)
 print("Total picks: " + str(len(total_picks)))
 num_bets = int(len(total_picks) / 5)
-print("# of parlays to create: " + str(num_bets))
+print("# of parlays to create: " + str(num_bets) + "\n")
 
+# Remove duplicates and shuffle the list
 total_picks = list(set(total_picks))
-
 random.shuffle(total_picks)
 
+# This method breaks out the list of bets into distinct groups of 5
 def break_out_bets():
     for i in range(0, len(total_picks), 5):  
         yield total_picks[i:i + 5]
 
+# Make a list of 5 leg parlays using the above method
 parlays = list(break_out_bets())
 
-#print(parlays)
-
-print("\n")
-
+# Empty array to store the list of parlays after filtering
 parlay_list = []
 
-def check_valid(bet):
-    if str(bet[4]).split("-")[0] == "points":
-        if int(bet[2]) % 5 == 0:
-            return True
-    elif str(bet[4]).split("-")[0] == "rebounds":
-        if int(bet[2]) in [6, 8, 10]:
-            return True
-    elif str(bet[4]).split("-")[0] == "assists":
-        if int(bet[2]) in [4, 6, 8 ,10]:
-            return True
-    else:
-        return False
-    
-    return False
-
+# Iterate over the list of 5 leg parlays created above
 for parlay in parlays:
-    p = []
-    for bet in list(parlay):
-        if bet[2] > 6:
-            p.append(str(bet[0]) + " " + str(bet[4]).split("-")[0] + " " + str(bet[4]).split("-")[1] + " " + str(bet[2]) + " " + str(bet[3]))
-    parlay_list.append(p)
+    # Create an empty array to store the legs of the parlay
+    legs = []
+    # Iterate over each leg in the current 5 leg parlay
+    for leg in list(parlay):
+        # If 
+        if leg[2] % 5 == 0 or leg[2] in [4, 6, 8, 10]:
+            legs.append(str(leg[0]) + " " + str(leg[4]).split("-")[0] + " " + str(leg[4]).split("-")[1] + " " + str(leg[2]) + " " + str(leg[3]))
+    parlay_list.append(legs)
 
 count = 1
 
+# This method is used as a sort key for the list of parlays base don how many legs they have that are valid bets
 def parlength(parlay):
     return len(parlay)
 
+# Sort the remaining parlays by length
 parlay_list.sort(key=parlength)
 
+# Iterate over the list of parlays
 for parlay in parlay_list:
+    # If we have an actual parlay in the current parlay (2+ legs)
     if len(parlay) >= 2:
         print("PARLAY #{count} --------------------------------------------------".format(count=count))
+        # Print each leg
         for p in parlay:
             print(p)
         count += 1
         print("\n")
 print("--------------------------------------------------------")
-
-    #for bet in parlay:
-    #    if bet[3] > 0:
-    #        print(parlay)
 
 # Commit the changes and close the connection
 conn.commit()
