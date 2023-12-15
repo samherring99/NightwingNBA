@@ -2,7 +2,7 @@
 
 This repository contains code for the NightwingBets NBA player prop parlay generation tool. This tool currently uses NO machine learning, just simple statistics rules to generate player prop parlays using data from ESPN and popular sportsbooks thorough the Odds API (https://the-odds-api.com/).
 
-The steps this took takes:
+The steps this tool takes:
 - make_db.py - Creates the empty `nba_stats.db` file to store data.
 - espn_api.py - No API key needed, hits the public ESPN endpoint for NBA teams, rosters, and player data.
 - odds_api.py - Needs Odds API key (see above), pulls Fanduel and DraftKings player prop data (odds, predicted value) for all NBA players.
