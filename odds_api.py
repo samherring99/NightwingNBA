@@ -37,6 +37,9 @@ def insert_odds(score_type, outcome, sql):
 # Main execution of this file
 
 if odds_response.status_code == 200:
+
+    print("Success! Inserting odds into the database...")
+
     # Convert the games API call response to JSON
     odds_json = odds_response.json()
 
@@ -59,17 +62,13 @@ if odds_response.status_code == 200:
 
         # Convert the resopnse to JSON
         odds_game_json = game_odds_response.json()
-        print(odds_game_json)
 
         # If we have entries from bookmakers
         if odds_game_json['bookmakers'] != []:
 
             # For 'player prop' in the returned odds JSON for a given game
             for prop in odds_game_json['bookmakers'][0]['markets']: # TODO: need to make this confirmed fanduel, can be DK as of now
-                print(prop['key'])
                 for outcome in prop['outcomes']:
-                    print(outcome)
-
                     insert_odds(prop['key'][7:], outcome, cursor)
                     
     conn.commit()
@@ -78,6 +77,6 @@ if odds_response.status_code == 200:
 else:
     print(f'Failed to get odds: status_code {odds_response.status_code}, response body {odds_response.text}')
 
-
+print("Finished!")
 print('Remaining requests', odds_response.headers['x-requests-remaining'])
 print('Used requests', odds_response.headers['x-requests-used'])
