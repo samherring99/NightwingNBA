@@ -1,6 +1,6 @@
 import requests
 import sqlite3
-
+from datetime import datetime
 
 # Insert your Odds API key here
 API_KEY = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
@@ -24,13 +24,13 @@ odds_response = requests.get(f'https://api.the-odds-api.com/v4/sports/{SPORT}/od
 })
 
 # This method inserts the Odds information into the previously created nba_stats.db database
-def insert_odds(score_type, outcome, sql):
+def insert_odds(score_type, outcome, sql, date):
     value = outcome['price']
-    data = (outcome['point'], value)
+    data = (outcome['point'], value, date)
     odds_type=outcome['name'].lower()
     identifier=score_type[0]
     sql.execute('''
-            UPDATE nba_statistics SET predicted_{score} = ?, p{id}g_{odds} = ? WHERE player_name = ?
+            UPDATE nba_statistics SET predicted_{score} = ?, p{id}g_{odds} = ?, game_date = ? WHERE player_name = ?
             '''.format(score=score_type, id=identifier, odds=odds_type), (*data, outcome['description']))
 
 
@@ -44,7 +44,9 @@ if odds_response.status_code == 200:
     odds_json = odds_response.json()
 
     # Connect to the NBA stats database
-    conn = sqlite3.connect('./nba_stats.db')
+    conn = sqlite3.connect('nba_stats.db',
+                             detect_types=sqlite3.PARSE_DECLTYPES |
+                             sqlite3.PARSE_COLNAMES)
     cursor = conn.cursor()
 
     # Iterate over the games returned from the Odds API call
@@ -63,13 +65,15 @@ if odds_response.status_code == 200:
         # Convert the resopnse to JSON
         odds_game_json = game_odds_response.json()
 
+        game_time = datetime.strptime(str(odds_game_json['commence_time'][:10]), '%Y-%m-%d')
+
         # If we have entries from bookmakers
         if odds_game_json['bookmakers'] != []:
 
             # For 'player prop' in the returned odds JSON for a given game
             for prop in odds_game_json['bookmakers'][0]['markets']: # TODO: need to make this confirmed fanduel, can be DK as of now
                 for outcome in prop['outcomes']:
-                    insert_odds(prop['key'][7:], outcome, cursor)
+                    insert_odds(prop['key'][7:], outcome, cursor, game_time)
                     
     conn.commit()
     conn.close()
