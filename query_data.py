@@ -1,5 +1,6 @@
 import sqlite3
 import random
+from datetime import datetime
 
 # This file generates the string for SQL queries and executes them based on the following steps:
 # - Generate 10 SQL queries of parlays from the NBA statistics and odds database 
@@ -30,10 +31,10 @@ def create_query():
 
     query_string = """
     
-        SELECT player_name, avg_{type}, predicted_{type}, {mark}_over FROM nba_statistics
-        WHERE avg_{type} > predicted_{type} AND {mark}_over {tail};
+        SELECT player_name, avg_{type}, predicted_{type}, {mark}_over, game_date FROM nba_statistics
+        WHERE game_date = {today} avg_{type} > predicted_{type} AND {mark}_over {tail};
 
-    """.format(type=score_type, mark=mark, tail=outcome)
+    """.format(type=score_type, mark=mark, tail=outcome, today=str(datetime.date.today()))
 
     return [query_string, score_type]
 
