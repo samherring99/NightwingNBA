@@ -51,6 +51,7 @@ for i in range(10):
 
     for pick in result:
         bet_string = query_pair[1] + "-over"
+        pick = tuple(filter(lambda x: x != pick[-1], pick))
         pick = pick + tuple([bet_string])
         total_picks.append(pick)
 
