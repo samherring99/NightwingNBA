@@ -62,7 +62,7 @@ if odds_response.status_code == 200:
             'bookmakers': 'draftkings,fanduel'
         })
 
-        # Convert the resopnse to JSON
+        # Convert the response to JSON
         odds_game_json = game_odds_response.json()
 
         game_time = datetime.strptime(str(odds_game_json['commence_time'][:10]), '%Y-%m-%d')

@@ -1,6 +1,7 @@
 import sqlite3
 import random
 from datetime import datetime
+from itertools import groupby
 
 # This file generates the string for SQL queries and executes them based on the following steps:
 # - Generate 10 SQL queries of parlays from the NBA statistics and odds database 
@@ -27,14 +28,12 @@ def create_query():
 
     
     outcomes = ["< 0", "> 0 AND {mark}_over < 120".format(mark=mark)]
-    outcome = random.choices(outcomes,cum_weights=[0.8, 0.2], k=1)
+    outcome = random.choices(outcomes, cum_weights=[0.8, 0.2], k=1)
 
     query_string = """
-    
-        SELECT player_name, avg_{type}, predicted_{type}, {mark}_over, game_date FROM nba_statistics
-        WHERE game_date = {today} avg_{type} > predicted_{type} AND {mark}_over {tail};
-
-    """.format(type=score_type, mark=mark, tail=outcome, today=str(datetime.date.today()))
+        SELECT player_name, player_team, avg_{type}, predicted_{type}, {mark}_over, game_date FROM nba_statistics
+        WHERE game_date LIKE "%{game_date}%" AND avg_{type} > predicted_{type} AND {mark}_over {tail};
+    """.format(type=score_type, mark=mark, tail=outcome[0], game_date=datetime.today().strftime('%Y-%m-%d'))
 
     return [query_string, score_type]
 
@@ -62,8 +61,19 @@ print("# of parlays to create: " + str(num_bets) + "\n")
 
 # Remove duplicates and shuffle the list
 total_picks = list(set(total_picks))
-random.shuffle(total_picks)
 
+#random.shuffle(total_picks)
+
+def break_out_bets():
+    for key, group in groupby(total_picks, lambda x: x[1]):
+        print(key)
+        for pick in group:
+            bet_components = pick[5].split("-")
+            print(pick[0] + " " + bet_components[0] + " " + bet_components[1] + " " + str(pick[3]) + " at " + str(pick[4]))
+
+break_out_bets()
+
+'''
 # This method breaks out the list of bets into distinct groups of 5
 def break_out_bets():
     for i in range(0, len(total_picks), 5):  
@@ -81,9 +91,7 @@ for parlay in parlays:
     legs = []
     # Iterate over each leg in the current 5 leg parlay
     for leg in list(parlay):
-        # If 
-        if leg[2] % 5 == 0 or leg[2] in [4, 6, 8, 10]:
-            legs.append(str(leg[0]) + " " + str(leg[4]).split("-")[0] + " " + str(leg[4]).split("-")[1] + " " + str(leg[2]) + " " + str(leg[3]))
+        legs.append(str(leg[0]) + " " + str(leg[4]).split("-")[0] + " " + str(leg[4]).split("-")[1] + " " + str(leg[2]) + " " + str(leg[3]))
     parlay_list.append(legs)
 
 count = 1
@@ -106,7 +114,7 @@ for parlay in parlay_list:
         count += 1
         print("\n")
 print("--------------------------------------------------------")
-
+'''
 # Commit the changes and close the connection
 conn.commit()
 conn.close()

@@ -9,6 +9,7 @@ cursor = conn.cursor()
 cursor.execute('''
         CREATE TABLE IF NOT EXISTS nba_statistics (
             player_name TEXT,
+            player_team TEXT,
             avg_points INTEGER,
             avg_rebounds INTEGER,
             avg_assists INTEGER,
@@ -20,7 +21,8 @@ cursor.execute('''
             prg_under INTEGER,
             predicted_assists INTEGER,
             pag_over INTEGER,
-            pag_under INTEGER
+            pag_under INTEGER,
+            game_date DATE
         )
 ''')
 
