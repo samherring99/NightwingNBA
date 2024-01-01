@@ -31,9 +31,11 @@ def create_query():
     outcome = random.choices(outcomes, cum_weights=[0.8, 0.2], k=1)
 
     query_string = """
-        SELECT player_name, player_team, avg_{type}, predicted_{type}, {mark}_over, game_date FROM nba_statistics
-        WHERE game_date LIKE "%{game_date}%" AND avg_{type} > predicted_{type} AND {mark}_over {tail};
+        SELECT player_name, player_team, avg_{type}, predicted_{type}, {mark}_over, game_date, next_matchup FROM nba_statistics
+        WHERE avg_{type} > predicted_{type} AND {mark}_over {tail};
     """.format(type=score_type, mark=mark, tail=outcome[0], game_date=datetime.today().strftime('%Y-%m-%d'))
+
+    # game_date LIKE "%{game_date}%" AND
 
     return [query_string, score_type]
 
@@ -50,9 +52,9 @@ for i in range(10):
 
     for pick in result:
         bet_string = query_pair[1] + "-over"
-        pick = tuple(filter(lambda x: x != pick[-1], pick))
-        pick = pick + tuple([bet_string])
-        total_picks.append(pick)
+        bet = tuple(filter(lambda x: x != pick[-2], pick))
+        bet = bet + tuple([bet_string])
+        total_picks.append(bet)
 
 # Calculate total picks generated and the number of parlays to create (picks / 5 legs)
 print("Total picks: " + str(len(total_picks)))
@@ -65,13 +67,49 @@ total_picks = list(set(total_picks))
 #random.shuffle(total_picks)
 
 def break_out_bets():
-    for key, group in groupby(total_picks, lambda x: x[1]):
-        print(key)
-        for pick in group:
-            bet_components = pick[5].split("-")
-            print(pick[0] + " " + bet_components[0] + " " + bet_components[1] + " " + str(pick[3]) + " at " + str(pick[4]))
+    matchups = {}
+    parlays = {}
 
-break_out_bets()
+    for bet in total_picks:
+        if str(bet[1]).split(" ")[-1] not in matchups:
+            matchups[str(bet[1]).split(" ")[-1]] = [bet]
+        else:
+            current = matchups[str(bet[1]).split(" ")[-1]]
+            current.append(bet)
+            matchups[str(bet[1]).split(" ")[-1]] = current
+
+    for team in matchups:
+        matchup = sorted([team.split(" ")[-1], matchups[team][0][5].split(" ")[-1]])
+
+        if str(matchup[0] + "-" + matchup[1]) not in parlays:
+            bets = []
+            if matchup[0] in matchups:
+                for pick in matchups[matchup[0]]:
+                    bets.append(pick)
+
+            if matchup[1] in matchups:
+                for pick in matchups[matchup[1]]:
+                    bets.append(pick)
+
+            parlays[str(matchup[0] + "-" + matchup[1])] = bets
+
+    return parlays
+
+    #for key, group in groupby(total_picks, lambda x: x[1]):
+    #    print(key)
+    #    for pick in group:
+    #        bet_components = pick[6].split("-")
+    #        print(pick[0] + " " + bet_components[0] + " " + bet_components[1] + " " + str(pick[3]) + " at " + str(pick[4]) + " against " + str(pick[5]))
+
+parlays = break_out_bets()
+
+for key in parlays:
+    print("GAME -> " + key.split("-")[0] + " vs " + key.split("-")[1])
+    for bet in parlays[key]:
+        bet_components = bet[6].split("-")
+        print(bet[0] + " " + bet_components[0] + " " + bet_components[1] + " " + str(bet[3]) + " at " + str(bet[4]))
+    print("\n")
+    #print(parlays[key])
 
 '''
 # This method breaks out the list of bets into distinct groups of 5
@@ -115,6 +153,13 @@ for parlay in parlay_list:
         print("\n")
 print("--------------------------------------------------------")
 '''
+
+# TODO:
+# - Clean up all of the code written in these commits for matchup based parlay generation
+# - Add date string check back into query string and test it
+# - Clean up the printing statements, make it very clear
+# - Make sure we are only getting parlays for the day. Get date range from odds_api and call espn api after?
+
 # Commit the changes and close the connection
 conn.commit()
 conn.close()

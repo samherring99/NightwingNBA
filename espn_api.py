@@ -70,14 +70,14 @@ def create_nba_database():
                         avg_assists = avg_assists_obj["displayValue"]
 
                 # Create an entry for the player
-                player_data = (athlete["fullName"], str(team["team"]["displayName"]), str(avg_points), str(avg_rebounds), str(avg_assists), '0', '0', '0', '0', '0', '0', '0', '0', '0', datetime.today().strftime('%Y-%m-%d'))
+                player_data = (athlete["fullName"], str(team["team"]["displayName"]), "Team", str(avg_points), str(avg_rebounds), str(avg_assists), '0', '0', '0', '0', '0', '0', '0', '0', '0', datetime.today().strftime('%Y-%m-%d'))
 
                 print(player_data)
 
                 # Add the player data into the database
                 cursor.execute('''
-                    INSERT INTO nba_statistics (player_name, player_team, avg_points, avg_rebounds, avg_assists, predicted_points, ppg_over, ppg_under, predicted_rebounds, prg_over, prg_under, predicted_assists, pag_over, pag_under, game_date)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO nba_statistics (player_name, player_team, next_matchup, avg_points, avg_rebounds, avg_assists, predicted_points, ppg_over, ppg_under, predicted_rebounds, prg_over, prg_under, predicted_assists, pag_over, pag_under, game_date)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', player_data)
 
 create_nba_database()

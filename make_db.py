@@ -10,6 +10,7 @@ cursor.execute('''
         CREATE TABLE IF NOT EXISTS nba_statistics (
             player_name TEXT,
             player_team TEXT,
+            next_matchup TEXT,
             avg_points INTEGER,
             avg_rebounds INTEGER,
             avg_assists INTEGER,

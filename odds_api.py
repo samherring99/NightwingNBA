@@ -3,7 +3,7 @@ import sqlite3
 from datetime import datetime
 
 # Insert your Odds API key here
-API_KEY = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+API_KEY = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
 
 # API constants
 SPORT = 'basketball_nba'
@@ -23,14 +23,24 @@ odds_response = requests.get(f'https://api.the-odds-api.com/v4/sports/{SPORT}/od
     'bookmakers': 'fanduel'
 })
 
+def get_player_team(player, matchup, sql):
+    sql.execute('''SELECT player_team FROM nba_statistics WHERE player_name = "{player}"'''.format(player=player))
+    team = sql.fetchall()
+    name = str(team[0][0]).split(" ")[-1]
+
+    if name != matchup[0].split(" ")[-1]:
+        return matchup[0]
+    else:
+        return matchup[1]
+
 # This method inserts the Odds information into the previously created nba_stats.db database
-def insert_odds(score_type, outcome, sql, date):
+def insert_odds(score_type, outcome, sql, date, opposing_team):
     value = outcome['price']
-    data = (outcome['point'], value, date)
+    data = (outcome['point'], value, date, opposing_team)
     odds_type=outcome['name'].lower()
     identifier=score_type[0]
     sql.execute('''
-            UPDATE nba_statistics SET predicted_{score} = ?, p{id}g_{odds} = ?, game_date = ? WHERE player_name = ?
+            UPDATE nba_statistics SET predicted_{score} = ?, p{id}g_{odds} = ?, game_date = ?, next_matchup = ? WHERE player_name = ?
             '''.format(score=score_type, id=identifier, odds=odds_type), (*data, outcome['description']))
 
 
@@ -73,7 +83,7 @@ if odds_response.status_code == 200:
             # For 'player prop' in the returned odds JSON for a given game
             for prop in odds_game_json['bookmakers'][0]['markets']: # TODO: need to make this confirmed fanduel, can be DK as of now
                 for outcome in prop['outcomes']:
-                    insert_odds(prop['key'][7:], outcome, cursor, game_time)
+                    insert_odds(prop['key'][7:], outcome, cursor, game_time, get_player_team(outcome['description'], [game['home_team'], game['away_team']], cursor))
                     
     conn.commit()
     conn.close()
