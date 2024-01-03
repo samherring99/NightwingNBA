@@ -13,19 +13,11 @@ from itertools import groupby
 # - Filter each group down to only valid bets for the sportsbook
 # - Return the list of remaining parlays sorted by length (number of legs)
 
-# Connect to the NBA stats database
-conn = sqlite3.connect('nba_stats.db')
-cursor = conn.cursor()
-
-# Array to store picks
-total_picks = []
-
 # This method creates the 'query string' used to extract data from the NBA statsistics database
 def create_query():
     score_type = random.choice(["rebounds", "assists", "points"])
     identifier=score_type[0]
     mark = "p{id}g".format(id=identifier)
-
     
     outcomes = ["< 0", "> 0 AND {mark}_over < 120".format(mark=mark)]
     outcome = random.choices(outcomes, cum_weights=[0.8, 0.2], k=1)
@@ -43,34 +35,39 @@ def create_query():
 # entires that meet the criteria of being < 0 odds (likely) 80% of the time or between 
 # 0-120 (less likely, more money) and between querying for points, 
 # rebounds, and assists that meet the criteria
-for i in range(10):
 
-    query_pair = create_query()
+def generate_bets(cursor):
+    picks = []
+    for i in range(10):
 
-    cursor.execute(query_pair[0])
-    result = cursor.fetchall()
+        # Generate a query and execute on the database
 
-    for pick in result:
-        bet_string = query_pair[1] + "-over"
-        bet = tuple(filter(lambda x: x != pick[-2], pick))
-        bet = bet + tuple([bet_string])
-        total_picks.append(bet)
+        query_pair = create_query()
+        cursor.execute(query_pair[0])
+        result = cursor.fetchall()
 
-# Calculate total picks generated and the number of parlays to create (picks / 5 legs)
-print("Total picks: " + str(len(total_picks)))
-num_bets = int(len(total_picks) / 5)
-print("# of parlays to create: " + str(num_bets) + "\n")
+        for pick in result:
+            bet_string = query_pair[1] + "-over"
+            bet = tuple(filter(lambda x: x != pick[-2], pick)) # Don't include 
+            bet = bet + tuple([bet_string])
+            picks.append(bet)
 
-# Remove duplicates and shuffle the list
-total_picks = list(set(total_picks))
+    return picks
 
-#random.shuffle(total_picks)
+def merge_matchup_teams(matchup, games):
+    bets = []
+    for i in range(2):
+        if matchup[i] in games:
+            for pick in games[matchup[i]]:
+                bets.append(pick)    
 
-def break_out_bets():
+    return bets
+
+def break_out_bets(bets):
     matchups = {}
     parlays = {}
 
-    for bet in total_picks:
+    for bet in bets:
         if str(bet[1]).split(" ")[-1] not in matchups:
             matchups[str(bet[1]).split(" ")[-1]] = [bet]
         else:
@@ -80,36 +77,43 @@ def break_out_bets():
 
     for team in matchups:
         matchup = sorted([team.split(" ")[-1], matchups[team][0][5].split(" ")[-1]])
-
-        if str(matchup[0] + "-" + matchup[1]) not in parlays:
-            bets = []
-            if matchup[0] in matchups:
-                for pick in matchups[matchup[0]]:
-                    bets.append(pick)
-
-            if matchup[1] in matchups:
-                for pick in matchups[matchup[1]]:
-                    bets.append(pick)
-
-            parlays[str(matchup[0] + "-" + matchup[1])] = bets
+        parlays[str(matchup[0] + "-" + matchup[1])] = merge_matchup_teams(matchup, matchups)
 
     return parlays
 
-    #for key, group in groupby(total_picks, lambda x: x[1]):
-    #    print(key)
-    #    for pick in group:
-    #        bet_components = pick[6].split("-")
-    #        print(pick[0] + " " + bet_components[0] + " " + bet_components[1] + " " + str(pick[3]) + " at " + str(pick[4]) + " against " + str(pick[5]))
+def print_parlays(parlays):
+    for key in parlays:
+        print("GAME -> " + key.split("-")[0] + " vs " + key.split("-")[1])
+        for bet in parlays[key]:
+            bet_components = bet[6].split("-")
+            print(bet[0] + " " + bet_components[0] + " " + bet_components[1] + " " + str(bet[3]) + " at " + str(bet[4]))
+        print("\n")
 
-parlays = break_out_bets()
 
-for key in parlays:
-    print("GAME -> " + key.split("-")[0] + " vs " + key.split("-")[1])
-    for bet in parlays[key]:
-        bet_components = bet[6].split("-")
-        print(bet[0] + " " + bet_components[0] + " " + bet_components[1] + " " + str(bet[3]) + " at " + str(bet[4]))
-    print("\n")
-    #print(parlays[key])
+def execute():
+    # Connect to the NBA stats database
+    conn = sqlite3.connect('nba_stats.db')
+    cursor = conn.cursor()
+
+    bets = generate_bets(cursor)
+
+    # Calculate total picks generated and the number of parlays to create (picks / avg 5 legs)
+    print("Total picks: " + str(len(bets)))
+    num_bets = int(len(bets) / 5)
+    print("# of parlays to create: " + str(num_bets) + "\n")
+
+    # Remove duplicates
+    bets = list(set(bets))
+
+    parlays = break_out_bets(bets)
+
+    print_parlays(parlays)
+
+    # Commit the changes and close the connection
+    conn.commit()
+    conn.close()
+
+execute()
 
 '''
 # This method breaks out the list of bets into distinct groups of 5
@@ -159,7 +163,3 @@ print("--------------------------------------------------------")
 # - Add date string check back into query string and test it
 # - Clean up the printing statements, make it very clear
 # - Make sure we are only getting parlays for the day. Get date range from odds_api and call espn api after?
-
-# Commit the changes and close the connection
-conn.commit()
-conn.close()
