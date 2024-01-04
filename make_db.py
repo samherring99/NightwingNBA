@@ -1,5 +1,6 @@
 import sqlite3
 
+# Crate the .db file if it doesn't exist
 conn = sqlite3.connect('nba_stats.db',
                              detect_types=sqlite3.PARSE_DECLTYPES |
                              sqlite3.PARSE_COLNAMES)

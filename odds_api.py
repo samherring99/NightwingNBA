@@ -3,7 +3,7 @@ import sqlite3
 from datetime import datetime
 
 # Insert your Odds API key here
-API_KEY = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+API_KEY = 'bb435798e9999819398cc19e7da53ae6'
 
 # API constants
 SPORT = 'basketball_nba'
@@ -13,7 +13,6 @@ ODDS_FORMAT = 'american'
 DATE_FORMAT = 'iso'
 
 # GET request using the above parameters to get NBA odds for the next ~1 week
-# TODO: Make this just for the day. Right now it doesnt make sense to run this daily
 odds_response = requests.get(f'https://api.the-odds-api.com/v4/sports/{SPORT}/odds', params={
     'api_key': API_KEY,
     'regions': REGIONS,
@@ -23,6 +22,7 @@ odds_response = requests.get(f'https://api.the-odds-api.com/v4/sports/{SPORT}/od
     'bookmakers': 'fanduel'
 })
 
+# This method returns the player's team given their name using a SQL query
 def get_player_team(player, matchup, sql):
     sql.execute('''SELECT player_team FROM nba_statistics WHERE player_name = "{player}"'''.format(player=player))
     team = sql.fetchall()
@@ -45,7 +45,6 @@ def insert_odds(score_type, outcome, sql, date, opposing_team):
 
 
 # Main execution of this file
-
 if odds_response.status_code == 200:
 
     print("Success! Inserting odds into the database...")

@@ -35,25 +35,26 @@ def create_query():
 # entires that meet the criteria of being < 0 odds (likely) 80% of the time or between 
 # 0-120 (less likely, more money) and between querying for points, 
 # rebounds, and assists that meet the criteria
-
 def generate_bets(cursor):
     picks = []
     for i in range(10):
 
         # Generate a query and execute on the database
-
         query_pair = create_query()
         cursor.execute(query_pair[0])
         result = cursor.fetchall()
 
         for pick in result:
             bet_string = query_pair[1] + "-over"
-            bet = tuple(filter(lambda x: x != pick[-2], pick)) # Don't include 
+            bet = tuple(filter(lambda x: x != pick[-2], pick)) # Don't include the game date in making picks
             bet = bet + tuple([bet_string])
             picks.append(bet)
 
     return picks
 
+
+# This method merges picks from two teams that are playing in the same matchup, given a list of games.
+# It will then return the merged list of bets for the given game
 def merge_matchup_teams(matchup, games):
     bets = []
     for i in range(2):
@@ -63,6 +64,8 @@ def merge_matchup_teams(matchup, games):
 
     return bets
 
+# This method breaks out the list of bets into parlays by game, where each parlay
+# has only picks from players that are playing each other
 def break_out_bets(bets):
     matchups = {}
     parlays = {}
@@ -81,6 +84,7 @@ def break_out_bets(bets):
 
     return parlays
 
+# Print method for the parlays to abstract most of the logic out of the below main method
 def print_parlays(parlays):
     for key in parlays:
         print("GAME -> " + key.split("-")[0] + " vs " + key.split("-")[1])
@@ -89,8 +93,9 @@ def print_parlays(parlays):
             print(bet[0] + " " + bet_components[0] + " " + bet_components[1] + " " + str(bet[3]) + " at " + str(bet[4]))
         print("\n")
 
-
+# Top level execution method used to call all methods above in order.
 def execute():
+
     # Connect to the NBA stats database
     conn = sqlite3.connect('nba_stats.db')
     cursor = conn.cursor()
@@ -104,7 +109,6 @@ def execute():
 
     # Remove duplicates
     bets = list(set(bets))
-
     parlays = break_out_bets(bets)
 
     print_parlays(parlays)
