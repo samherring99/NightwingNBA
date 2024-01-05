@@ -3,7 +3,7 @@ import sqlite3
 from datetime import datetime
 
 # Insert your Odds API key here
-API_KEY = 'bb435798e9999819398cc19e7da53ae6'
+API_KEY = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
 
 # API constants
 SPORT = 'basketball_nba'

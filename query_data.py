@@ -1,6 +1,6 @@
 import sqlite3
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 from itertools import groupby
 
 # This file generates the string for SQL queries and executes them based on the following steps:
@@ -24,10 +24,8 @@ def create_query():
 
     query_string = """
         SELECT player_name, player_team, avg_{type}, predicted_{type}, {mark}_over, game_date, next_matchup FROM nba_statistics
-        WHERE avg_{type} > predicted_{type} AND {mark}_over {tail};
-    """.format(type=score_type, mark=mark, tail=outcome[0], game_date=datetime.today().strftime('%Y-%m-%d'))
-
-    # game_date LIKE "%{game_date}%" AND
+        WHERE game_date LIKE "%{game_date}%" AND avg_{type} > predicted_{type} AND {mark}_over {tail};
+    """.format(type=score_type, mark=mark, tail=outcome[0], game_date=str((datetime.today() + timedelta(days=1)).strftime('%Y-%m-%d')) + " 00:00:00")
 
     return [query_string, score_type]
 
@@ -86,12 +84,23 @@ def break_out_bets(bets):
 
 # Print method for the parlays to abstract most of the logic out of the below main method
 def print_parlays(parlays):
+    log_string = ""
     for key in parlays:
         print("GAME -> " + key.split("-")[0] + " vs " + key.split("-")[1])
         for bet in parlays[key]:
             bet_components = bet[6].split("-")
-            print(bet[0] + " " + bet_components[0] + " " + bet_components[1] + " " + str(bet[3]) + " at " + str(bet[4]))
+            output = bet[0] + " " + bet_components[0] + " " + bet_components[1] + " " + str(bet[3]) + " at " + str(bet[4])
+            print(output)
+            log_string = log_string + output + "\n"
         print("\n")
+
+    file_name = "picks/picks_{month}_{day}.txt".format(month='{:02d}'.format(datetime.now().month), day='{:02d}'.format(datetime.now().day))
+    logfile = open(file_name, 'w')
+    logfile.write(log_string)
+    logfile.close()
+
+    # Commit the above on 1/5
+    # Next look into a script to check historical accuracy :-) 
 
 # Top level execution method used to call all methods above in order.
 def execute():
