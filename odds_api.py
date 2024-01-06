@@ -2,7 +2,7 @@ import requests
 import sqlite3
 from datetime import datetime
 
-# Insert your Odds API key here
+# Insert your Odds API key here XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 API_KEY = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
 
 # API constants
@@ -26,12 +26,14 @@ odds_response = requests.get(f'https://api.the-odds-api.com/v4/sports/{SPORT}/od
 def get_player_team(player, matchup, sql):
     sql.execute('''SELECT player_team FROM nba_statistics WHERE player_name = "{player}"'''.format(player=player))
     team = sql.fetchall()
-    name = str(team[0][0]).split(" ")[-1]
 
-    if name != matchup[0].split(" ")[-1]:
-        return matchup[0]
-    else:
-        return matchup[1]
+    if team:
+        name = str(team[0][0]).split(" ")[-1]
+
+        if name != matchup[0].split(" ")[-1]:
+            return matchup[0]
+        else:
+            return matchup[1]
 
 # This method inserts the Odds information into the previously created nba_stats.db database
 def insert_odds(score_type, outcome, sql, date, opposing_team):
