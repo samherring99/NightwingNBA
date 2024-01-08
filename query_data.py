@@ -99,9 +99,6 @@ def print_parlays(parlays):
     logfile.write(log_string)
     logfile.close()
 
-    # Commit the above on 1/5
-    # Next look into a script to check historical accuracy :-) 
-
 # Top level execution method used to call all methods above in order.
 def execute():
 
@@ -127,52 +124,3 @@ def execute():
     conn.close()
 
 execute()
-
-'''
-# This method breaks out the list of bets into distinct groups of 5
-def break_out_bets():
-    for i in range(0, len(total_picks), 5):  
-        yield total_picks[i:i + 5]
-
-# Make a list of 5 leg parlays using the above method
-parlays = list(break_out_bets())
-
-# Empty array to store the list of parlays after filtering
-parlay_list = []
-
-# Iterate over the list of 5 leg parlays created above
-for parlay in parlays:
-    # Create an empty array to store the legs of the parlay
-    legs = []
-    # Iterate over each leg in the current 5 leg parlay
-    for leg in list(parlay):
-        legs.append(str(leg[0]) + " " + str(leg[4]).split("-")[0] + " " + str(leg[4]).split("-")[1] + " " + str(leg[2]) + " " + str(leg[3]))
-    parlay_list.append(legs)
-
-count = 1
-
-# This method is used as a sort key for the list of parlays base don how many legs they have that are valid bets
-def parlength(parlay):
-    return len(parlay)
-
-# Sort the remaining parlays by length
-parlay_list.sort(key=parlength)
-
-# Iterate over the list of parlays
-for parlay in parlay_list:
-    # If we have an actual parlay in the current parlay (2+ legs)
-    if len(parlay) >= 2:
-        print("PARLAY #{count} --------------------------------------------------".format(count=count))
-        # Print each leg
-        for p in parlay:
-            print(p)
-        count += 1
-        print("\n")
-print("--------------------------------------------------------")
-'''
-
-# TODO:
-# - Clean up all of the code written in these commits for matchup based parlay generation
-# - Add date string check back into query string and test it
-# - Clean up the printing statements, make it very clear
-# - Make sure we are only getting parlays for the day. Get date range from odds_api and call espn api after?

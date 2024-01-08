@@ -2,7 +2,7 @@ import requests
 import sqlite3
 from datetime import datetime
 
-# Insert your Odds API key here XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+# Insert your Odds API key here
 API_KEY = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
 
 # API constants
