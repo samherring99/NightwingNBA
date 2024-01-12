@@ -2,6 +2,7 @@ import sqlite3
 import random
 from datetime import datetime, timedelta
 from itertools import groupby
+import os
 
 # This file generates the string for SQL queries and executes them based on the following steps:
 # - Generate 10 SQL queries of parlays from the NBA statistics and odds database 
@@ -95,6 +96,8 @@ def print_parlays(parlays):
         print("\n")
 
     file_name = "picks/picks_{month}_{day}.txt".format(month='{:02d}'.format(datetime.now().month), day='{:02d}'.format(datetime.now().day))
+    #db_name = "nba_stats_{month}_{day}.db".format(month='{:02d}'.format(datetime.now().month), day='{:02d}'.format(datetime.now().day))
+    #os.system("mv nba_stats.db {db_name}".format(db_name=db_name))
     logfile = open(file_name, 'w')
     logfile.write(log_string)
     logfile.close()

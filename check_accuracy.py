@@ -27,6 +27,13 @@ for i in range(page_count-1):
 # Given 1/09/24 - Scottie Barnes - assists over 4.5 - check if accurate
 # Do by PARLAY
 
+def get_team_stats(game_id, team_id):
+    team_stats_endpoint = "https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/events/{game_id}/competitions/{game_id}/competitors/{team_id}/statistics"
+    team_stats_response = requests.get(team_stats_endpoint)
+    team_stats_data = team_stats_response.json()
+
+    # Do more here
+
 def get_player_stats(game_id, team_id, player_id):
     player_stats_endpoint = "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/events/{game_id}/competitions/{game_id}/competitors/{team_id}/roster/{player_id}/statistics/0?lang=en&region=us".format(game_id=game_id, team_id=team_id, player_id=player_id)
     player_stats_response = requests.get(player_stats_endpoint)
@@ -63,14 +70,18 @@ for id_num in id_list[:1]:
     url = "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2024/teams/{team_id}/events?lang=en&region=us".format(team_id=id_num)
 
     response = requests.get(url, params={"page": 1})
-    data = response.json() 
+    data = response.json()
     page_count = data['pageCount']
     print(page_count)
     for game in data['items'][:1]:
+        # If game is not the one we are looking for
+
         id_num = str(game['$ref']).split("?")[0].split("/")[-1]
         print(id_num)
         get_game_data(id_num)
         time.sleep(2)
+
+        # else get team and player scores
 
     #for i in range(page_count - 1):
     #    response = requests.get(url, params={"page": i+2})
