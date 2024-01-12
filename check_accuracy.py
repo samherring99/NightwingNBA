@@ -3,23 +3,27 @@ import time
 
 # TODO clean up the below code
 
-game_id_endpoint = "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/teams/"
-game_page_response = requests.get(game_id_endpoint)
-game_page = game_page_response.json()
+def get_all_teams():
 
-id_list = []
-
-page_count = game_page['pageCount']
-for i in range(len(game_page['items'])):
-    id_num = str(game_page['items'][i]['$ref']).split("?")[0].split("/")[-1]
-    id_list.append(int(id_num))
-
-for i in range(page_count-1):
-    game_page_response = requests.get(game_id_endpoint, params={"page": int(i+2)})
+    game_id_endpoint = "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/teams/"
+    game_page_response = requests.get(game_id_endpoint)
     game_page = game_page_response.json()
+
+    id_list = []
+
+    page_count = game_page['pageCount']
     for i in range(len(game_page['items'])):
         id_num = str(game_page['items'][i]['$ref']).split("?")[0].split("/")[-1]
         id_list.append(int(id_num))
+
+    for i in range(page_count-1):
+        game_page_response = requests.get(game_id_endpoint, params={"page": int(i+2)})
+        game_page = game_page_response.json()
+        for i in range(len(game_page['items'])):
+            id_num = str(game_page['items'][i]['$ref']).split("?")[0].split("/")[-1]
+            id_list.append(int(id_num))
+
+    return id_list
 
     
 #print(id_list)
@@ -27,10 +31,29 @@ for i in range(page_count-1):
 # Given 1/09/24 - Scottie Barnes - assists over 4.5 - check if accurate
 # Do by PARLAY
 
+# Maybe just game ID, then do both teams?? - CLEAN ALL THIS UP
+
 def get_team_stats(game_id, team_id):
-    team_stats_endpoint = "https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/events/{game_id}/competitions/{game_id}/competitors/{team_id}/statistics"
+    team_stats_endpoint = "https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/events/{game_id}/competitions/{game_id}/competitors/{team_id}/statistics".format(game_id=game_id, team_id=team_id)
     team_stats_response = requests.get(team_stats_endpoint)
     team_stats_data = team_stats_response.json()
+
+    print("TEAM: " + str(team_id))
+
+    for category in team_stats_data['splits']['categories']:
+        for stat in category['stats']:
+            print(stat['displayName'] + " " + str(stat['value']))
+
+def get_game_stats(game_id):
+    teams_stats_endpoint = "https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/events/{game_id}/competitions/{game_id}/competitors/".format(game_id=game_id) # {team_id}/statistics
+    teams_stats_response = requests.get(teams_stats_endpoint)
+    teams_stats_data = teams_stats_response.json()
+
+    #print(teams_stats_data)
+
+    for competitor in teams_stats_data['items']:
+        #print(competitor['id'])
+        get_team_stats(game_id, competitor['id'])
 
     # Do more here
 
@@ -66,20 +89,26 @@ def get_game_data(game_id):
         get_team_scores(game_id, team['id'])
 
 # First we want to read the picks in to a dict in this file
-for id_num in id_list[:1]:
-    url = "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2024/teams/{team_id}/events?lang=en&region=us".format(team_id=id_num)
+#id_list = get_all_teams()
 
-    response = requests.get(url, params={"page": 1})
-    data = response.json()
-    page_count = data['pageCount']
-    print(page_count)
-    for game in data['items'][:1]:
-        # If game is not the one we are looking for
+def iterate_teams(team_list):
 
-        id_num = str(game['$ref']).split("?")[0].split("/")[-1]
-        print(id_num)
-        get_game_data(id_num)
-        time.sleep(2)
+    for id_num in team_list[:1]:
+        url = "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2024/teams/{team_id}/events?lang=en&region=us".format(team_id=id_num)
+
+        response = requests.get(url, params={"page": 1})
+        data = response.json()
+        page_count = data['pageCount']
+        print(page_count)
+        for game in data['items'][:1]:
+            # If game is not the one we are looking for
+
+            id_num = str(game['$ref']).split("?")[0].split("/")[-1]
+            print(id_num)
+            get_game_data(id_num)
+            time.sleep(2)
+
+get_game_stats(401585087)
 
         # else get team and player scores
 
