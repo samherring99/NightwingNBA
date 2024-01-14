@@ -1,6 +1,7 @@
 from utils.misc_utils import get_all_teams
 from utils.player_stat_utils import get_game_stats_by_player
-from utils.sql_utils import write_players_data_to_db, create_database
+from utils.sql_utils import write_players_data_to_db, write_team_data_to_db, create_database
+from utils.team_stat_utils import get_game_stats_for_teams
 
 import requests
 import sqlite3
@@ -11,7 +12,7 @@ conn = sqlite3.connect('nba_datastore.db',
                              sqlite3.PARSE_COLNAMES)
 cursor = conn.cursor()
 
-def iterate_teams(team_list, cursor):
+def iterate_teams(team_list, cursor, connection):
     seen_games = []
 
     # TODO - make the below into smaller methods
@@ -25,14 +26,21 @@ def iterate_teams(team_list, cursor):
             id_num = str(game['$ref']).split("?")[0].split("/")[-1]
             if id_num not in seen_games:
                 game_players_stats = get_game_stats_by_player(id_num)
-                #game_team_stats = get_game_stats_for_teams(id_num) 
-                # TODO - make the team_stats database and table
+
                 if game_players_stats:
                     seen_games.append(id_num)
                     write_players_data_to_db(game_players_stats, cursor)
-                    print("Success!")
-                time.sleep(0.1)
+                    print("Success adding player data!")
 
+                    game_team_stats = get_game_stats_for_teams(id_num, game_players_stats['date']) 
+
+                    if game_team_stats:
+                        write_team_data_to_db(game_team_stats, cursor)
+                        print("Success adding team data!")
+
+                connection.commit()
+                time.sleep(0.1)
+    
         for i in range(page_count-1):
             team_games_response = requests.get(team_games_endpoint, params={"page": int(i+2)})
             team_game_data = team_games_response.json()
@@ -40,13 +48,23 @@ def iterate_teams(team_list, cursor):
                 id_num = str(i['$ref']).split("?")[0].split("/")[-1]
                 if id_num not in seen_games:
                     game_players_stats = get_game_stats_by_player(id_num)
+
                     if game_players_stats:
                         seen_games.append(id_num)
                         write_players_data_to_db(game_players_stats, cursor)
-                        print("Success!")
+                        print("Success adding player data!")
+
+                        game_team_stats = get_game_stats_for_teams(id_num, game_players_stats['date']) 
+
+                        if game_team_stats:
+                            write_team_data_to_db(game_team_stats, cursor)
+                            print("Success adding team data!")
+
+                    connection.commit()        
                     time.sleep(0.1)
+                    
 create_database(cursor, conn)
-iterate_teams(get_all_teams(), cursor)
+iterate_teams(get_all_teams(), cursor, conn)
 
 conn.commit()
 conn.close()
