@@ -122,133 +122,161 @@ SELECT game_name from player_stats where game_id = {game_id}
 '''
 
 team_template = '''
-SELECT * FROM team_stats WHERE game_id = {game_id} and team_id = {team_id};
+SELECT * FROM team_stats WHERE game_id = {game_id} and team_id = {team_id}
 '''
 
 get_player_team = '''
-select team_id from player_stats where game_id = {game_id} and player_id = {player_id}
+select team_id from player_stats where player_id = {player_id} group by team_id
 '''
 
 get_team_previous_game = '''
 select game_id from player_stats where game_date <= (select game_date from player_stats where game_id = {game_id}) and team_id = {team_id} group by game_date order by game_date limit 5;
 '''
 
-def iterate_teams(team_list, cursor):
-    for team in team_list:
-        team_games_endpoint = "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2024/teams/{team_id}/events?lang=en&region=us".format(team_id=team)
-        team_games_response = requests.get(team_games_endpoint, params={"page": 1})
+def validation(game_id, player_id, guess):
+    cursor.execute(player_template.format(game_id=game_id, player_id=player_id))
+    player_game_stats = cursor.fetchall()
+
+    if player_game_stats:
+
+        hit_points = player_game_stats[0][53]
+        hit_assists = player_game_stats[0][43]
+        hit_rebounds = player_game_stats[0][15]
+
+        points_score = 0.0 if hit_points <= guess[0] else 1.0
+        assists_score = 0.0 if hit_assists <= guess[1] else 1.0
+        rebounds_score = 0.0 if hit_rebounds <= guess[2] else 1.0
+
+        return [points_score, assists_score, rebounds_score]
+
+def get_opponent_id(game_id, team_id):
+    cursor.execute(matchup_template.format(game_id=game_id, team_id=team_id))
+    game_team_ids = cursor.fetchall()
+
+    opposing_team = 0
+    for team in game_team_ids:
+        if team[0] != team_id:
+            opposing_team = team[0]
+
+    return opposing_team
+
+def get_previous_game_id(game_id, team_id):
+    cursor.execute(get_team_previous_game.format(game_id=game_id, team_id=team_id))
+    previous_opponent_game = cursor.fetchall()
+
+    opposing_team_previous_game_id = game_id
+
+    for i in range(len(previous_opponent_game)):
+        if str(previous_opponent_game[i][0]) == str(game_id) and i != 0:
+            opposing_team_previous_game_id = previous_opponent_game[i-1][0]
+            return opposing_team_previous_game_id
+        elif i == 0:
+            continue
+        else:
+            continue
+
+    return opposing_team_previous_game_id
+
+def get_team_previous_game_stats(game_id, team_id):
+    cursor.execute(team_template.format(game_id=game_id, team_id=team_id))
+    team_previous_game_stats = cursor.fetchall()
+
+    return team_previous_game_stats[0]
+
+def get_team_for_player(player_id):
+    cursor.execute(get_player_team.format(player_id=player_id))
+    player_team_id = cursor.fetchall()
+
+    if player_team_id:
+        return player_team_id[0][0]
+    else:
+        return []
+
+def get_player_data(game_id, player_id):
+    cursor.execute(player_template.format(game_id=game_id, player_id=player_id))
+    stats = cursor.fetchall()
+
+    if stats:
+        return stats[0]
+    else:
+        return []
+
+def get_team_roster(team_id):
+    cursor.execute(roster_template.format(team_id=team_id))
+    players = cursor.fetchall()
+
+    return players
+
+def get_games_for_team(team_id):
+    team_games_endpoint = "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2024/teams/{team_id}/events?lang=en&region=us".format(team_id=team_id)
+    team_games_response = requests.get(team_games_endpoint, params={"page": 1})
+    team_game_data = team_games_response.json()
+    games = [team_game_data['items']]
+    page_count = team_game_data['pageCount']
+
+    for i in range(page_count-1):
+        team_games_endpoint = "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2024/teams/{team_id}/events?lang=en&region=us".format(team_id=team_id)
+        team_games_response = requests.get(team_games_endpoint, params={"page": i+2})
         team_game_data = team_games_response.json()
-        page_count = team_game_data['pageCount']
+        games.append(team_game_data['items'])
 
-        #print(team_game_data)
-        #print(team)
+    return games
 
-        for i in range(len(team_game_data['items'])-1):
-            id_num = str(team_game_data['items'][i]['$ref']).split("?")[0].split("/")[-1]
-            #print(id_num)
-            
-            cursor.execute(roster_template.format(team_id=team))
-            players = cursor.fetchall()
-            #print(list(players))
+def get_context_for_game(game_id, player_id):
 
-            for player_id in players:
+    guess_points = 10.0
+    guess_assists = 10.0
+    guess_rebounds = 10.0
 
-                #print(player_id[0])
-                
-                #print(id_num)
-                #print(player_id[0])
+    player_team_id = get_team_for_player(player_id)
 
-                #print(player_template.format(game_id=id_num, player_id=player_id[0]))
+    team_previous_game_id = get_previous_game_id(game_id, player_team_id)
 
-                cursor.execute(player_template.format(game_id=id_num, player_id=player_id[0]))
-                result = cursor.fetchall()
+    player_previous_game_stats = get_player_data(team_previous_game_id, player_id)
 
-                #print(result)
+    if player_previous_game_stats:
 
-                if result:
+        guess_points = player_previous_game_stats[53]
+        guess_assists = player_previous_game_stats[43]
+        guess_rebounds = player_previous_game_stats[15]
 
-                    print("#######################################################################")
+        team_previous_game_stats = get_team_previous_game_stats(team_previous_game_id, player_team_id)
 
-                    next_id_num = str(team_game_data['items'][i+1]['$ref']).split("?")[0].split("/")[-1]
-                    print("For game with ID " + str(next_id_num) + " and player with ID " + str(player_id[0]))
+        opposing_team = get_opponent_id(game_id, player_team_id)
 
-                    guess_points = result[0][53]
-                    guess_assists = result[0][43]
-                    guess_rebounds = result[0][15]
+        opposing_team_previous_game_id = get_previous_game_id(game_id, opposing_team)
 
-                    #print(str(guess_points) + " " + str(guess_assists) + " " + str(guess_rebounds))
+        opponent_previous_game_stats = get_team_previous_game_stats(opposing_team_previous_game_id, opposing_team)
 
-                    previous_player_stats = result
+        guess = [guess_points, guess_assists, guess_rebounds]
 
-                    cursor.execute(get_player_team.format(game_id=id_num, player_id=player_id[0]))
-                    player_team_id = cursor.fetchall()
+        scores = validation(game_id, player_id, guess)
 
-                    print("Previous Player Stats: " + str(previous_player_stats[0]))
-                    print("\n")
+        return [[player_previous_game_stats, team_previous_game_stats, opponent_previous_game_stats], scores]
 
-                    cursor.execute(team_template.format(game_id=id_num, team_id=player_team_id[0][0]))
-                    result = cursor.fetchall()
+    else:
+        return []
 
-                    #TODO Remove team IDs and iterate
-                    print("Previous Game Stats: " + str(result[0][2:]))
-                    print("\n")
 
-                    cursor.execute(matchup_template.format(game_id=next_id_num, team_id=player_team_id[0]))
-                    game_team_ids = cursor.fetchall()
+def generate_data(team_list, cursor):
+    for team in team_list:
+        games_list = get_games_for_team(team)
 
-                    opposing_team = 0
-                    for game in game_team_ids:
-                        if game[0] != player_team_id[0]:
-                            opposing_team = game[0]
+        for game_list in games_list:
+            for i in range(len(game_list)):
+                game_id_num = str(game_list[i]['$ref']).split("?")[0].split("/")[-1]
 
-                    cursor.execute(get_team_previous_game.format(game_id=next_id_num, team_id=opposing_team))
-                    previous_opponent_game = cursor.fetchall()
+                players = get_team_roster(team)
 
-                    opposing_team_previous_game_id = 0
-
-                    for i in range(len(previous_opponent_game)):
-                        #print(previous_opponent_game[i][0])
-                        if str(previous_opponent_game[i][0]) == str(next_id_num) and i != 0:
-                            opposing_team_previous_game_id = previous_opponent_game[i-1][0]
-                        elif i == 0:
-                            continue
-                        else:
-                            continue
-
-                    cursor.execute(team_template.format(game_id=opposing_team_previous_game_id, team_id=opposing_team))
-                    previous_opponent_matchup_stats = cursor.fetchall()
-                    print("Opponent's Previous Game Stats: " + str(previous_opponent_matchup_stats[0][2:]))
-                    print("\n")
-
-                    ## 287 input values + 3 for guesses
-
-                    print("Validation: ")
-
-                    cursor.execute(player_template.format(game_id=next_id_num, player_id=player_id[0]))
-                    result = cursor.fetchall()
-
-                    if result:
-
-                        hit_points = result[0][53]
-                        hit_assists = result[0][43]
-                        hit_rebounds = result[0][15]
-
-                        #print(str(hit_points) + " " + str(hit_assists) + " " + str(hit_rebounds))
-
-                        print("Points: 0.0" if hit_points <= guess_points else "Points: 1.0")
-                        print("Assists: 0.0" if hit_assists <= guess_assists else "Assists: 1.0")
-                        print("Rebounds: 0.0" if hit_rebounds <= guess_rebounds else "Rebounds: 1.0")
-                        print("\n")
+                for player_id in players:
+                    data = get_context_for_game(game_id_num, player_id[0])
+                    if data:
+                        output = data[1]
+                        scores = validation(game_id_num, player_id[0], output)
+                        print(data)
+                        print(scores)
 
 team_list = get_all_teams()
-#print(team_list)
-iterate_teams(team_list, cursor)
+generate_data(team_list, cursor)
 
 conn.close()
-'''
-        for i in range(page_count-1):
-            team_games_response = requests.get(team_games_endpoint, params={"page": int(i+2)})
-            team_game_data = team_games_response.json()
-            for i in team_game_data['items'][1:]:
-                id_num = str(i['$ref']).split("?")[0].split("/")[-1]
-                '''
