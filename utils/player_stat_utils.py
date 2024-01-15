@@ -11,11 +11,15 @@ def get_player_stats(game_id, team_id, player_id):
 
     stats_dict = {'player_id' : player_id}
 
-    for category in player_stats_data['splits']['categories']:
-        for stat in category['stats']:
-            stats_dict[stat['displayName']] = str(stat['value'])
+    if 'splits' in player_stats_data:
 
-    return stats_dict
+        for category in player_stats_data['splits']['categories']:
+            for stat in category['stats']:
+                stats_dict[stat['displayName']] = str(stat['value'])
+
+        return stats_dict
+    else:
+        return {}
 
 def get_all_player_stats_for_team(game_id, team_id):
     team_boxscore_endpoint = "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/events/{game_id}/competitions/{game_id}/competitors/{team_id}/roster?lang=en&region=us".format(game_id=game_id, team_id=team_id)
