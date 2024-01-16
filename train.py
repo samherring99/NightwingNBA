@@ -19,6 +19,7 @@ import torch
 from torch import nn
 from torch.optim import Adam
 from torch.utils.data import DataLoader, TensorDataset
+from torch.nn.utils.rnn import pad_sequence
 
 
 conn = sqlite3.connect('nba_datastore.db',
@@ -165,19 +166,19 @@ def get_previous_game_id(game_id, team_id):
     cursor.execute(get_team_previous_game.format(game_id=game_id, team_id=team_id))
     previous_opponent_game = cursor.fetchall()
 
-    #print(previous_opponent_game)
+    if previous_opponent_game:
+        opposing_team_previous_game_id = 0
 
-    opposing_team_previous_game_id = game_id
-
-    for i in range(len(previous_opponent_game)):
-        if str(previous_opponent_game[i][0]) == str(game_id) and i != 0:
-            opposing_team_previous_game_id = previous_opponent_game[i-1][0]
-            #print(opposing_team_previous_game_id)
-            return opposing_team_previous_game_id
-        elif i == 0:
-            continue
-        else:
-            continue
+        for i in range(len(previous_opponent_game)):
+            if str(previous_opponent_game[i][0]) == str(game_id) and i != 0:
+                opposing_team_previous_game_id = previous_opponent_game[i-1][0]
+                return opposing_team_previous_game_id
+            elif i == 0:
+                continue
+            else:
+                continue
+    else:
+        return 0
 
     return opposing_team_previous_game_id
 
@@ -185,7 +186,10 @@ def get_team_previous_game_stats(game_id, team_id):
     cursor.execute(team_template.format(game_id=game_id, team_id=team_id))
     team_previous_game_stats = cursor.fetchall()
 
-    return team_previous_game_stats[0]
+    if team_previous_game_stats:
+        return team_previous_game_stats[0]
+    else:
+        return []
 
 def get_team_for_player(player_id):
     cursor.execute(get_player_team.format(player_id=player_id))
@@ -288,11 +292,13 @@ def plot_data(array):
 def generate_data(team_list, cursor):
     X = [] 
     y = []
-    for team in team_list[:1]:
+    for team in team_list:
         games_list = get_games_for_team(team)
 
-        for game_list in games_list[1:2]:
-            for i in range(len(game_list) - (len(game_list)-5)):
+        print("TEAM ID: " + str(team))
+
+        for game_list in games_list:
+            for i in range(len(game_list)):
                 game_id_num = str(game_list[i]['$ref']).split("?")[0].split("/")[-1]
 
                 players = get_team_roster(team)
@@ -313,7 +319,7 @@ def generate_data(team_list, cursor):
                         #print(training_example)
 
                         if training_example and scores:
-                            X.append(training_example)      # X:  N x 287
+                            X.append(training_example)      # X:  N x 283
                             y.append(scores)                # y:  N x 3 
 
                         #print(X)
@@ -323,6 +329,7 @@ def generate_data(team_list, cursor):
 
 team_list = get_all_teams()
 X, y = generate_data(team_list, cursor)
+#print(X)
 
 # print(len(X))
 # print(len(y))
@@ -334,10 +341,10 @@ df = pd.DataFrame(X)
 print(df.shape)
 
 # Normalize
-features = X 
-feature_means = np.mean(features, axis=1)[..., None]
-feature_stds = np.std(features, axis=1)[..., None]
-standardized_features = (features - feature_means) / feature_stds
+#features = X 
+#feature_means = np.mean(features, axis=1)[..., None]
+#feature_stds = np.std(features, axis=1)[..., None]
+#standardized_features = (features - feature_means) / feature_stds
 
 # feature_means = np.mean(features, axis=0) ## I think this one is right
 # feature_stds = np.std(features, axis=0)
@@ -369,28 +376,31 @@ standardized_features = (features - feature_means) / feature_stds
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42) 
 
+#print(len(X_train))
+#print(len(X_train[0]))
+
 ### Random Forest ###
 
-rfR = RandomForestRegressor(n_estimators=100, max_depth=3, random_state=0)
-rfR.fit(X_train, y_train)
+# rfR = RandomForestRegressor(n_estimators=100, max_depth=3, random_state=0)
+# rfR.fit(X_train, y_train)
 
-rfR_train_pred = rfR.predict(X_train)
-rfR_test_pred = rfR.predict(X_test)
+# rfR_train_pred = rfR.predict(X_train)
+# rfR_test_pred = rfR.predict(X_test)
 
-# Evaluation Metrics
-print("MSE RF - Train:", round(mean_squared_error(y_train, rfR_train_pred), 2))
-print("MSE RF - Test:", round(mean_squared_error(y_test, rfR_test_pred), 2))
-print("-" * 20)
-print("MAE RF - Train:", round(mean_absolute_error(y_train, rfR_train_pred), 2))
-print("MAE RF - Test:", round(mean_absolute_error(y_test, rfR_test_pred), 2))
+# # Evaluation Metrics
+# print("MSE RF - Train:", round(mean_squared_error(y_train, rfR_train_pred), 2))
+# print("MSE RF - Test:", round(mean_squared_error(y_test, rfR_test_pred), 2))
+# print("-" * 20)
+# print("MAE RF - Train:", round(mean_absolute_error(y_train, rfR_train_pred), 2))
+# print("MAE RF - Test:", round(mean_absolute_error(y_test, rfR_test_pred), 2))
 
-# Sample Predictions
-samples = X_test[:5]
-true_values = y_test[:5]
-predictions = rfR.predict(samples)
+# # Sample Predictions
+# samples = X_test[:5]
+# true_values = y_test[:5]
+# predictions = rfR.predict(samples)
 
-for i, (true, pred) in enumerate(zip(true_values, predictions)):
-    print(f"Sample {i}: True Value = {true}, Prediction = {pred}")
+# for i, (true, pred) in enumerate(zip(true_values, predictions)):
+#     print(f"Sample {i}: True Value = {true}, Prediction = {pred}")
     
     
 ### Neural network ###
@@ -418,11 +428,17 @@ model = NeuralNetwork()
 criterion = nn.MSELoss() 
 optimizer = Adam(model.parameters())
 
+X_train_padded = pad_sequence([torch.tensor(seq, dtype=torch.float32) for seq in X_train], batch_first=True)
+y_train_padded = pad_sequence([torch.tensor(seq, dtype=torch.float32) for seq in y_train], batch_first=True)
+X_test_padded = pad_sequence([torch.tensor(seq, dtype=torch.float32) for seq in X_test], batch_first=True)
+y_test_padded = pad_sequence([torch.tensor(seq, dtype=torch.float32) for seq in y_test], batch_first=True)
+
+
  #Convert data to PyTorch tensors
-X_train_torch = torch.tensor(X_train, dtype=torch.float32)
-y_train_torch = torch.tensor(y_train, dtype=torch.float32)
-X_test_torch = torch.tensor(X_test, dtype=torch.float32)
-y_test_torch = torch.tensor(y_test, dtype=torch.float32)
+X_train_torch = torch.tensor(X_train_padded, dtype=torch.float32)
+y_train_torch = torch.tensor(y_train_padded, dtype=torch.float32)
+X_test_torch = torch.tensor(X_test_padded, dtype=torch.float32)
+y_test_torch = torch.tensor(y_test_padded, dtype=torch.float32)
 
 X_train_split, X_val_split, y_train_split, y_val_split = train_test_split(X_train_torch, y_train_torch, test_size=0.2, random_state=0)
 
