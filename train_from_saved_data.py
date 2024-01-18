@@ -7,10 +7,10 @@ from torch.nn.utils.rnn import pad_sequence
 from matplotlib import pyplot as plt
 import numpy as np
 
-train_dataset = torch.load('train_dataset.pt')
-val_dataset = torch.load('val_dataset.pt')
-X_test_torch = torch.load('X_test.pt')
-y_test_torch = torch.load('y_test.pt')
+train_dataset = torch.load('saved_data/train_dataset.pt')
+val_dataset = torch.load('saved_data/val_dataset.pt')
+X_test_torch = torch.load('saved_data/X_test.pt')
+y_test_torch = torch.load('saved_data/y_test.pt')
 
 train_loader = DataLoader(dataset=train_dataset, batch_size=512, shuffle=True)
 val_loader = DataLoader(dataset=val_dataset, batch_size=512)
@@ -21,15 +21,19 @@ val_losses = []
 class NeuralNetwork(nn.Module):
     def __init__(self):
         super(NeuralNetwork, self).__init__()
-        self.layer1 = nn.Linear(283, 128)  # Assuming all samples have the same number of features
-        self.layer2 = nn.Linear(128, 64)
-        self.layer3 = nn.Linear(64, 32)
+        self.layer1 = nn.Linear(283, 512)  # Assuming all samples have the same number of features
+        self.layer2 = nn.Linear(512, 256)
+        self.layer3 = nn.Linear(256, 128)
+        self.layer4 = nn.Linear(128, 64)
+        self.layer5 = nn.Linear(64, 32)
         self.output_layer = nn.Linear(32, 3)
 
     def forward(self, x):
         x = torch.relu(self.layer1(x))
         x = torch.relu(self.layer2(x))
         x = torch.relu(self.layer3(x))
+        x = torch.relu(self.layer4(x))
+        x = torch.relu(self.layer5(x))
         x = self.output_layer(x)
         return x
 
@@ -37,10 +41,10 @@ model = NeuralNetwork()
 
 # Loss and optimizer
 criterion = nn.MSELoss() 
-optimizer = Adam(model.parameters(), lr=0.0001)
+optimizer = Adam(model.parameters(), lr=0.00075)
 
 # Training loop with validation and accuracy
-for epoch in range(200):
+for epoch in range(100):
     model.train()
     total_train_loss = 0
 
@@ -75,6 +79,8 @@ for epoch in range(200):
 
 
     print(f"Epoch [{epoch + 1}/50], Training Loss: {avg_train_loss:.4f}, Validation Loss: {avg_val_loss:.4f}")
+
+torch.save(model.state_dict(), "./saved_data/weights.pth")
 
 model.eval()
 with torch.no_grad():
