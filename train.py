@@ -268,12 +268,7 @@ def validation(game_id, player_id):
         hit_assists = player_game_stats[0][43]
         hit_rebounds = player_game_stats[0][15]
 
-       #points_score = 0.0 if hit_points <= guess[0] else 1.0
-        #assists_score = 0.0 if hit_assists <= guess[1] else 1.0
-        #rebounds_score = 0.0 if hit_rebounds <= guess[2] else 1.0
-
-        # return [points_score, assists_score, rebounds_score] # classification
-        return [hit_points, hit_assists, hit_rebounds] # regression 
+        return [hit_points, hit_assists, hit_rebounds]
 
 def plot_data(array):
     x_vals = []
@@ -452,12 +447,6 @@ torch.save(val_dataset, 'val_dataset.pt')
 torch.save(X_test_torch, 'X_test.pt')
 torch.save(y_test_torch, 'y_test.pt')
 
-# Load the datasets
-# train_dataset = torch.load('train_dataset.pt')
-# val_dataset = torch.load('val_dataset.pt')
-# X_test_torch = torch.load('X_test.pt')
-# y_test_torch = torch.load('y_test.pt')
-
 train_loader = DataLoader(dataset=train_dataset, batch_size=16, shuffle=True)
 val_loader = DataLoader(dataset=val_dataset, batch_size=16)
 
@@ -522,57 +511,6 @@ plt.xlabel('Epochs')
 plt.ylabel('Loss')
 plt.legend()
 plt.show()
-# Plot the loss
-# Evaluate predictions
-
 
 
 conn.close()
-
-
-
-
-
-
-
-
-
-
-
-
-# new features like home vs away game, averages, time series, etc
-
-# df['feature'] = y 
-
-# Visualize before normalizing 
-
-#plt.figure(figsize=(15, 15))  
-
-#num_cols = len(df.columns)   
-#n_rows = 80                    
-#n_cols = 4  
-
-
-#sns.histplot(df, bins=286)
-
-#for i, col in enumerate(df.columns):
-#    plt.subplot(n_rows, n_cols, i+1)  
-#    sns.histplot(df[col], bins=30)      # histogram for each column / feature
-#    plt.title(col)                      
-
-
-
-#correlation_data = df.corr() # not sure if this will work 
-#plt.figure(figsize=(12, 10))
-#sns.heatmap(correlation_data, annot=True, cmap='coolwarm', fmt=".2f", cbar_kws={'shrink': .82})
-#plt.title('Feature Correlation')
-#plt.xticks(rotation=45, ha='right')
-#plt.yticks(rotation=0)
-#plt.tight_layout()
-#plt.show()
-
-
-# Normalize
-
-# Visualize after normalizing
-#print(y)
