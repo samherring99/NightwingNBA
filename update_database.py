@@ -23,10 +23,10 @@ def check_if_game_in_database(game_id, cursor):
         return False
 
 def add_game_to_database(idnum, stats, cursor):
-    write_players_data_to_db(game_players_stats, cursor)
-    print("Success adding player data for date: " + str(game_players_stats['date']))
+    write_players_data_to_db(stats, cursor)
+    print("Success adding player data for date: " + str(stats['date']))
 
-    game_team_stats = get_game_stats_for_teams(id_num, game_players_stats['date']) 
+    game_team_stats = get_game_stats_for_teams(idnum, stats['date']) 
     if game_team_stats:
         write_team_data_to_db(game_team_stats, cursor)
         print("Success adding team data!")
@@ -42,7 +42,7 @@ def check_game_status(game, cursor):
         time.sleep(0.1)
 
 
-def iterate_teams(team_list, cursor):
+def iterate_teams(team_list, cursor, conn):
 
     for id_num in team_list:
         team_games_endpoint = "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2024/teams/{team_id}/events?lang=en&region=us".format(team_id=id_num)
@@ -50,16 +50,18 @@ def iterate_teams(team_list, cursor):
         team_game_data = team_games_response.json()
         page_count = team_game_data['pageCount']
         for game in team_game_data['items']:
-            check_game_status(game, cursor)
+            if check_game_status(game, cursor):
+                conn.commit()
     
         for i in range(page_count-1):
             team_games_response = requests.get(team_games_endpoint, params={"page": int(i+2)})
             team_game_data = team_games_response.json()
             for i in team_game_data['items']:
-                check_game_status(i, cursor)
+                if check_game_status(i, cursor):
+                    conn.commit()
                     
 create_database(cursor, conn)
-iterate_teams(get_all_teams(), cursor)
+iterate_teams(get_all_teams(), cursor, conn)
 
 conn.commit()
 conn.close()
