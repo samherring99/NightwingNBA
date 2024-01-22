@@ -254,29 +254,30 @@ def write_players_data_to_db(player_stats, cursor):
         team_name = team.split(" ")[-1]
         if team_name in player_stats:
             team_player_stats = player_stats[team_name]
-            team_id = team_player_stats['team_id']
-            for key in team_player_stats.keys():
-                if key != 'team_id' and 'player_id' in team_player_stats[key]:
-                    player_name = key
-                    player_id = team_player_stats[key]['player_id']
+            if team_player_stats:
+                team_id = team_player_stats['team_id']
+                for key in team_player_stats.keys():
+                    if key != 'team_id' and 'player_id' in team_player_stats[key]:
+                        player_name = key
+                        player_id = team_player_stats[key]['player_id']
 
-                    entry = {'game_name' : game_name, 'game_id' : game_id, 'game_date' : game_date, 'team_name' : team_name, 'team_id' : team_id, 'player_name' : player_name, 'player_id' : player_id}
+                        entry = {'game_name' : game_name, 'game_id' : game_id, 'game_date' : game_date, 'team_name' : team_name, 'team_id' : team_id, 'player_name' : player_name, 'player_id' : player_id}
 
-                    for stat in team_player_stats[key]:
-                        entry['player_id'] = player_id
-                        if stat != 'player_id':
-                            table_stat_pieces = stat.split(" ")
-                            table_stat = ""
-                            for piece in table_stat_pieces:
-                                table_stat = table_stat + piece.lower() + "_"
-                            table_stat = table_stat[0:len(table_stat)-1].replace('-','_')
-                            table_stat = table_stat.replace('/','')
+                        for stat in team_player_stats[key]:
+                            entry['player_id'] = player_id
+                            if stat != 'player_id':
+                                table_stat_pieces = stat.split(" ")
+                                table_stat = ""
+                                for piece in table_stat_pieces:
+                                    table_stat = table_stat + piece.lower() + "_"
+                                table_stat = table_stat[0:len(table_stat)-1].replace('-','_')
+                                table_stat = table_stat.replace('/','')
 
-                            if table_stat[0].isnumeric():
-                                table_stat = "s_" + table_stat
+                                if table_stat[0].isnumeric():
+                                    table_stat = "s_" + table_stat
 
-                            entry[table_stat] = team_player_stats[key][stat]
-                    write_entry_to_players_db(entry, cursor)
+                                entry[table_stat] = team_player_stats[key][stat]
+                        write_entry_to_players_db(entry, cursor)
 
     return game_date
 

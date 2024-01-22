@@ -125,7 +125,7 @@ a40
  FROM player_stats WHERE game_id = {game_id} AND player_id = {player_id};
 '''
 
-def get_team_previous_game_stats(game_id, team_id):
+def get_team_previous_game_stats(game_id, team_id, cursor):
     cursor.execute("SELECT * FROM team_stats WHERE game_id = {game_id} and team_id = {team_id}".format(game_id=game_id, team_id=team_id))
     team_previous_game_stats = cursor.fetchall()
 
@@ -149,7 +149,7 @@ def get_game_date(game_id):
 
     game_dict = {'game_id' : game_id, 'date' : data['date'], 'game_name' : data['name']}
 
-    #print(data['name'] + " " + data['date'])
+    #print(data['name'])
 
     return game_dict['date']
 
@@ -179,6 +179,7 @@ def get_game_today_for_player(team_id):
             game_date = get_game_date(id_num)
 
             if str((datetime.strptime(game_date, '%Y-%m-%dT%H:%MZ') - timedelta(days=1)).strftime('%Y-%m-%d')) == str(datetime.today().strftime('%Y-%m-%d')):
+                print(game_date)
                 return id_num
 
 def get_last_game_for_team(cursor, team_id):
@@ -191,6 +192,8 @@ def get_last_game_for_team(cursor, team_id):
 def get_last_game_for_player(cursor, player_id):
     cursor.execute("select game_id from player_stats where player_id = {player_id} group by game_date order by game_date;".format(player_id=player_id[0]))
     last_game = cursor.fetchall()[-1]
+
+    print(get_game_date(last_game[0]))
 
     if last_game:
         return last_game
@@ -272,7 +275,7 @@ with torch.no_grad():
                     for value in list(player_previous_game_stats):
                         data.append(value)
 
-                    team_previous_game_stats = get_team_previous_game_stats(last_game_id[0], team)
+                    team_previous_game_stats = get_team_previous_game_stats(last_game_id[0], team, cursor)
 
                     for value in team_previous_game_stats[2:]:
                         data.append(value)
@@ -281,14 +284,18 @@ with torch.no_grad():
 
                     opponent_previous_game_id = get_last_game_for_team(cursor, opponent_id)
 
-                    opponent_previous_game_stats = get_team_previous_game_stats(opponent_previous_game_id[0], opponent_id)
+                    opponent_previous_game_stats = get_team_previous_game_stats(opponent_previous_game_id[0], opponent_id, cursor)
 
                     if player_previous_game_stats and len(team_previous_game_stats) > 1 and len(opponent_previous_game_stats) > 1:
 
                         for value in opponent_previous_game_stats[2:]:
                             data.append(float(value))
 
-                        inputs = torch.tensor([data], dtype=torch.float32)
+                        padded_data = pad_sequence([torch.tensor(data, dtype=torch.float32)], batch_first=True)
+
+                        inputs = torch.tensor(padded_data, dtype=torch.float32)
+
+                        #inputs = torch.tensor([data], dtype=torch.float32)
                         prediction = model(inputs)
 
                         list_preds = prediction.tolist()

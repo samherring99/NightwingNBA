@@ -34,11 +34,12 @@ def add_game_to_database(idnum, stats, cursor):
 
 def check_game_status(game, cursor):
     id_num = str(game['$ref']).split("?")[0].split("/")[-1]
-    if not check_if_game_in_database(id_num, cursor):
+    if id_num and not check_if_game_in_database(id_num, cursor):
+        #print(id_num)
         game_players_stats = get_game_stats_by_player(id_num)
 
         if game_players_stats:
-            add_game_to_database(id_num, game_players_stats, cursor)
+            return add_game_to_database(id_num, game_players_stats, cursor)
         time.sleep(0.1)
 
 
