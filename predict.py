@@ -275,6 +275,8 @@ with torch.no_grad():
                     for value in list(player_previous_game_stats):
                         data.append(value)
 
+                    # Game ID is from last game player played - change this
+
                     team_previous_game_stats = get_team_previous_game_stats(last_game_id[0], team, cursor)
 
                     for value in team_previous_game_stats[2:]:
