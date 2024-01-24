@@ -12,6 +12,8 @@ conn = sqlite3.connect('nba_datastore.db',
                              sqlite3.PARSE_COLNAMES)
 cursor = conn.cursor()
 
+# Player or team
+
 def write_player_and_team_data(player_data, team_data, game_id, cursor):
     write_players_data_to_db(player_data, cursor)
     print("Success adding player data!")
@@ -21,6 +23,8 @@ def write_player_and_team_data(player_data, team_data, game_id, cursor):
     if game_team_stats:
         write_team_data_to_db(team_data, cursor)
         print("Success adding team data!")
+
+# Top level method for database building
 
 def process_game(game_id, data, cursor, conn):
     id_num = str(game['$ref']).split("?")[0].split("/")[-1]
@@ -33,6 +37,8 @@ def process_game(game_id, data, cursor, conn):
         conn.commit()
         time.sleep(0.1)
         return id_num
+
+# TODO This could use some methodizing
 
 def iterate_teams(team_list, cursor, connection):
     seen_games = []
