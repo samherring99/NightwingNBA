@@ -42,6 +42,10 @@ def check_game_status(game, cursor):
             return add_game_to_database(id_num, game_players_stats, cursor)
         time.sleep(0.1)
 
+def add_games(data, cursor, connection):
+    for game in data['items']:
+        if check_game_status(game, cursor):
+            connection.commit()
 
 def iterate_teams(team_list, cursor, conn):
 
@@ -50,16 +54,12 @@ def iterate_teams(team_list, cursor, conn):
         team_games_response = requests.get(team_games_endpoint, params={"page": 1})
         team_game_data = team_games_response.json()
         page_count = team_game_data['pageCount']
-        for game in team_game_data['items']:
-            if check_game_status(game, cursor):
-                conn.commit()
+        add_games(team_game_data, cursor, conn)
     
         for i in range(page_count-1):
             team_games_response = requests.get(team_games_endpoint, params={"page": int(i+2)})
             team_game_data = team_games_response.json()
-            for i in team_game_data['items']:
-                if check_game_status(i, cursor):
-                    conn.commit()
+            add_games(team_game_data, cursor, conn)
                     
 create_database(cursor, conn)
 iterate_teams(get_all_teams(), cursor, conn)

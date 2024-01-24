@@ -166,20 +166,14 @@ def get_previous_game_id(game_id, team_id):
     cursor.execute(get_team_previous_game.format(game_id=game_id, team_id=team_id))
     previous_opponent_game = cursor.fetchall()
 
+    opposing_team_previous_game_id = 0
+
     if previous_opponent_game:
-        opposing_team_previous_game_id = 0
 
         for i in range(len(previous_opponent_game)):
             if str(previous_opponent_game[i][0]) == str(game_id) and i != 0:
                 opposing_team_previous_game_id = previous_opponent_game[i-1][0]
                 return opposing_team_previous_game_id
-            elif i == 0:
-                continue
-            else:
-                continue
-    else:
-        return 0
-
     return opposing_team_previous_game_id
 
 def get_team_previous_game_stats(game_id, team_id):
@@ -213,7 +207,10 @@ def get_team_roster(team_id):
     cursor.execute(roster_template.format(team_id=team_id))
     players = cursor.fetchall()
 
-    return players
+    if players:
+        return players
+    else:
+        return []
 
 def get_games_for_team(team_id):
     team_games_endpoint = "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2024/teams/{team_id}/events?lang=en&region=us".format(team_id=team_id)
@@ -234,21 +231,25 @@ def get_context_for_game(game_id, player_id):
 
     player_team_id = get_team_for_player(player_id)
 
-    team_previous_game_id = get_previous_game_id(game_id, player_team_id)
+    player_previous_game_id = get_previous_game_id(game_id, player_team_id)
 
-    player_previous_game_stats = get_player_data(team_previous_game_id, player_id)
+    # If previous game id != 0
+
+    player_previous_game_stats = get_player_data(player_previous_game_id, player_id)
 
     if player_previous_game_stats:
 
-        guess_points = player_previous_game_stats[53]
-        guess_assists = player_previous_game_stats[43]
-        guess_rebounds = player_previous_game_stats[15]
+        team_previous_game_id = get_previous_game_id(game_id, team_previous_game_id)
+
+        # If previous game id != 0
 
         team_previous_game_stats = get_team_previous_game_stats(team_previous_game_id, player_team_id)
 
         opposing_team = get_opponent_id(game_id, player_team_id)
 
         opposing_team_previous_game_id = get_previous_game_id(game_id, opposing_team)
+
+        # If previous game id != 0
 
         opponent_previous_game_stats = get_team_previous_game_stats(opposing_team_previous_game_id, opposing_team)
 
@@ -284,6 +285,8 @@ def plot_data(array):
     plt.plot(x_vals, y_vals)
     plt.show()
 
+
+# Top level method
 def generate_data(team_list, cursor):
     X = [] 
     y = []
@@ -303,24 +306,19 @@ def generate_data(team_list, cursor):
                     if data:
                         scores = validation(game_id_num, player_id[0])
 
-                        #print(data[0])
-                        #print(scores)
                         training_example = [] 
 
                         for piece in data:
                             for number in piece:
                                 training_example.append(number) # flatten np.flatten()
 
-                        #print(training_example)
-
                         if training_example and scores:
                             X.append(training_example)      # X:  N x 283
                             y.append(scores)                # y:  N x 3 
-
-                        #print(X)
-                        #print(y)
-
     return X, y 
+
+
+# TODO Clean up and organize the below code into a method utils file
 
 team_list = get_all_teams()
 X, y = generate_data(team_list, cursor)
