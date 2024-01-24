@@ -306,7 +306,6 @@ def write_team_data_to_db(team_stats, cursor):
                         table_stat = "s_" + table_stat
 
                     entry[table_stat] = team_stats[team_id][stat]
-            #print(entry)
             write_entry_to_team_db(entry, cursor)
 
 

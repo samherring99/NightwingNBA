@@ -149,38 +149,42 @@ def get_game_date(game_id):
 
     game_dict = {'game_id' : game_id, 'date' : data['date'], 'game_name' : data['name']}
 
-    #print(data['name'])
-
     return game_dict['date']
 
+def check_if_game_before_today(game_date):
+    return (datetime.strptime(game_date, '%Y-%m-%dT%H:%MZ') - timedelta(days=1)).strftime('%Y-%m-%d') == datetime.today().strftime('%Y-%m-%d')
+
+def find_game_today_in_team_data(data):
+    for game in data['items']:
+        id_num = str(game['$ref']).split("?")[0].split("/")[-1]
+
+        game_date = get_game_date(id_num)
+
+        if check_if_game_before_today(game_date):
+            return id_num
+    return 0
+
 def get_game_today_for_player(team_id):
-    #print("select team_id from player_stats where player_id = {player_id} group by team_id".format(player_id=player_id[0]))
 
     team_games_endpoint = "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2024/teams/{team_id}/events?lang=en&region=us".format(team_id=team_id[0])
     team_games_response = requests.get(team_games_endpoint, params={"page": 1})
     team_game_data = team_games_response.json()
 
-    # TODO methodize the below code
-
     page_count = team_game_data['pageCount']
-    for game in team_game_data['items']:
-        id_num = str(game['$ref']).split("?")[0].split("/")[-1]
 
-        game_date = get_game_date(id_num)
+    id_num = find_game_today_in_team_data(team_game_data)
 
-        if (datetime.strptime(game_date, '%Y-%m-%dT%H:%MZ') - timedelta(days=1)).strftime('%Y-%m-%d') == datetime.today().strftime('%Y-%m-%d'):
-            return id_num
+    if id_num != 0:
+        return id_num
 
     for i in range(page_count-1):
         team_games_response = requests.get(team_games_endpoint, params={"page": int(i+2)})
         team_game_data = team_games_response.json()
-        for i in team_game_data['items']:
-            id_num = str(i['$ref']).split("?")[0].split("/")[-1]
-            game_date = get_game_date(id_num)
 
-            if str((datetime.strptime(game_date, '%Y-%m-%dT%H:%MZ') - timedelta(days=1)).strftime('%Y-%m-%d')) == str(datetime.today().strftime('%Y-%m-%d')):
-                print(game_date)
-                return id_num
+        id_num = find_game_today_in_team_data(team_game_data)
+
+        if id_num != 0:
+            return id_num
 
 def get_last_game_for_team(cursor, team_id):
     cursor.execute("select game_id from player_stats where team_id = {team_id} group by game_date order by game_date;".format(team_id=team_id))
@@ -275,9 +279,9 @@ with torch.no_grad():
                     for value in list(player_previous_game_stats):
                         data.append(value)
 
-                    # Game ID is from last game player played - change this
+                    last_team_game = get_last_game_for_team(cursor, team)
 
-                    team_previous_game_stats = get_team_previous_game_stats(last_game_id[0], team, cursor)
+                    team_previous_game_stats = get_team_previous_game_stats(last_team_game[0], team, cursor)
 
                     for value in team_previous_game_stats[2:]:
                         data.append(value)
@@ -297,7 +301,6 @@ with torch.no_grad():
 
                         inputs = torch.tensor(padded_data, dtype=torch.float32)
 
-                        #inputs = torch.tensor([data], dtype=torch.float32)
                         prediction = model(inputs)
 
                         list_preds = prediction.tolist()
