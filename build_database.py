@@ -2,7 +2,7 @@ from utils.misc_utils import get_all_teams
 from utils.player_stat_utils import get_game_stats_by_player
 from utils.sql_utils import write_players_data_to_db, write_team_data_to_db, create_database
 from utils.team_stat_utils import get_game_stats_for_teams
-from utils.processing_utils import write_player_and_team_data, process_game, process_team_data
+from utils.processing_utils import process_team_data
 
 import requests
 import sqlite3
