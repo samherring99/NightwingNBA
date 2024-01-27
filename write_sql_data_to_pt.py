@@ -112,17 +112,8 @@ def generate_data(team_list, cursor):
                             y.append(scores)                # y:  N x 3 
     return X, y 
 
-
-# TODO Clean up and organize the below code into a method utils file
-
 team_list = get_all_teams()
 X, y = generate_data(team_list, cursor)
-#print(X)
-
-# print(len(X))
-# print(len(y))
-# print(len(X[0]))
-# print(len(y[0]))
 
 df = pd.DataFrame(X)
 
@@ -138,58 +129,7 @@ print(df.shape)
 # feature_stds = np.std(features, axis=0)
 # standardized_features = (features - feature_means) / feature_stds
 
-#print(standardized_features)
-
-#for example in standardized_features:
-    # target is y[i]
-
-#plot_data(standardized_features[0])
-
-
-### Linear/Logistic Regression ###
-
-
-# model = OneVsRestClassifier(LogisticRegression()).fit(X_train, y_train)
-
-# lr = LogisticRegression().fit(X_train, y_train) # 'ovr' (one-vs-rest) strategy, fits a separate classifier for each class.
-
-# y_pred_train = lr.predict(X_train)
-# y_pred_test = lr.predict(X_test)
-
-# train_accuracy = accuracy_score(y_train, y_pred_train)
-# test_accuracy = accuracy_score(y_test, y_pred_test)
-
-# print(f'Training Accuracy: {train_accuracy:.2f}')
-# print(f'Test Accuracy: {test_accuracy:.2f}')
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42) 
-
-#print(len(X_train))
-#print(len(X_train[0]))
-
-### Random Forest ###
-
-# rfR = RandomForestRegressor(n_estimators=100, max_depth=3, random_state=0)
-# rfR.fit(X_train, y_train)
-
-# rfR_train_pred = rfR.predict(X_train)
-# rfR_test_pred = rfR.predict(X_test)
-
-# # Evaluation Metrics
-# print("MSE RF - Train:", round(mean_squared_error(y_train, rfR_train_pred), 2))
-# print("MSE RF - Test:", round(mean_squared_error(y_test, rfR_test_pred), 2))
-# print("-" * 20)
-# print("MAE RF - Train:", round(mean_absolute_error(y_train, rfR_train_pred), 2))
-# print("MAE RF - Test:", round(mean_absolute_error(y_test, rfR_test_pred), 2))
-
-# # Sample Predictions
-# samples = X_test[:5]
-# true_values = y_test[:5]
-# predictions = rfR.predict(samples)
-
-# for i, (true, pred) in enumerate(zip(true_values, predictions)):
-#     print(f"Sample {i}: True Value = {true}, Prediction = {pred}")
-    
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)  
     
 ### Neural network ###
 
@@ -240,72 +180,4 @@ torch.save(val_dataset, 'val_dataset.pt')
 torch.save(X_test_torch, 'X_test.pt')
 torch.save(y_test_torch, 'y_test.pt')
 
-'''
-
-train_loader = DataLoader(dataset=train_dataset, batch_size=16, shuffle=True)
-val_loader = DataLoader(dataset=val_dataset, batch_size=16)
-
-train_losses = []
-val_losses = []
-
-# Training loop with validation and accuracy
-for epoch in range(50):
-    model.train()
-    total_train_loss = 0
-
-    for X_batch, y_batch in train_loader:
-        # Forward pass
-        outputs = model(X_batch)
-        loss = criterion(outputs, y_batch)
-
-        # Backward pass and optimizations
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        total_train_loss += loss.item()
-
-    avg_train_loss = total_train_loss / len(train_loader)
-    train_losses.append(avg_train_loss)
-
-
-    # Validation phase
-    model.eval()
-    total_val_loss = 0
-
-    with torch.no_grad():
-        for X_batch, y_batch in val_loader:
-            outputs = model(X_batch)
-            loss = criterion(outputs, y_batch)
-            total_val_loss += loss.item()
-
-    avg_val_loss = total_val_loss / len(val_loader)
-    val_losses.append(avg_val_loss)
-
-
-    print(f"Epoch [{epoch + 1}/50], Training Loss: {avg_train_loss:.4f}, Validation Loss: {avg_val_loss:.4f}")
-
-model.eval()
-with torch.no_grad():
-    y_pred = model(X_test_torch)
-    test_loss = criterion(y_pred, y_test_torch)
-    print(f"Test Loss: {test_loss:.4f}")
-
-    sample_indices = [0, 1, 2, 3, 4]  
-    sample_inputs = X_test_torch[sample_indices]
-    sample_true_values = y_test_torch[sample_indices]
-    sample_predictions = model(sample_inputs)
-
-    for i, (true, pred) in enumerate(zip(sample_true_values, sample_predictions)):
-        print(f"Sample {i}: True Value = {true.tolist()}, Prediction = {pred.tolist()}")
-
-plt.plot(train_losses, label='Training Loss')
-plt.plot(val_losses, label='Validation Loss')
-plt.title('Training and Validation Losses')
-plt.xlabel('Epochs')
-plt.ylabel('Loss')
-plt.legend()
-plt.show()
-
-'''
 conn.close()
