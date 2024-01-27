@@ -96,19 +96,23 @@ with torch.no_grad():
 
                     opponent_previous_game_id = get_last_game_for_team(cursor, opponent_id)
 
-                    opponent_previous_game_stats = get_team_previous_game_stats(opponent_previous_game_id[0], opponent_id, cursor)
+                    if opponent_previous_game_id:
 
-                    if player_previous_game_stats and len(team_previous_game_stats) > 1 and len(opponent_previous_game_stats) > 1:
+                        opponent_previous_game_stats = get_team_previous_game_stats(opponent_previous_game_id[0], opponent_id, cursor)
 
-                        for value in opponent_previous_game_stats[2:]:
-                            data.append(float(value))
+                        if player_previous_game_stats and len(team_previous_game_stats) > 1 and len(opponent_previous_game_stats) > 1:
 
-                        padded_data = pad_sequence([torch.tensor(data, dtype=torch.float32)], batch_first=True)
+                            for value in opponent_previous_game_stats[2:]:
+                                data.append(float(value))
 
-                        inputs = torch.tensor(padded_data, dtype=torch.float32)
+                            padded_data = pad_sequence([torch.tensor(data, dtype=torch.float32)], batch_first=True)
 
-                        prediction = model(inputs)
+                            inputs = torch.tensor(padded_data, dtype=torch.float32)
 
-                        list_preds = prediction.tolist()
+                            prediction = model(inputs)
 
-                        print("Prediction: " + str(list_preds[0][0]) + " points, " + str(list_preds[0][1]) + " assists, " + str(list_preds[0][2]) + " rebounds" )    
+                            list_preds = prediction.tolist()
+
+                            if list_preds[0][0] > 10.0 or list_preds[0][2] > 4.0:
+
+                                print("Prediction: " + str(list_preds[0][0]) + " points, " + str(list_preds[0][1]) + " assists, " + str(list_preds[0][2]) + " rebounds" )    

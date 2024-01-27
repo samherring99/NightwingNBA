@@ -2,6 +2,10 @@ from utils.templates import *
 import requests
 import sqlite3
 from datetime import datetime, timedelta
+from utils.player_stat_utils import get_game_stats_by_player
+from utils.sql_utils import write_players_data_to_db, write_team_data_to_db
+from utils.team_stat_utils import get_game_stats_for_teams
+import time
 
 # Build
 def write_player_and_team_data(player_data, team_data, game_id, cursor):
@@ -209,10 +213,10 @@ def get_game_today_for_player(team_id):
 
 def get_last_game_for_team(cursor, team_id):
     cursor.execute("select game_id from player_stats where team_id = {team_id} group by game_date order by game_date;".format(team_id=team_id))
-    last_game = cursor.fetchall()[-1]
+    last_games = cursor.fetchall()
 
-    if last_game:
-        return last_game
+    if last_games:
+        return last_games[-1]
 
 def get_last_game_for_player(cursor, player_id):
     cursor.execute("select game_id from player_stats where player_id = {player_id} group by game_date order by game_date;".format(player_id=player_id[0]))
