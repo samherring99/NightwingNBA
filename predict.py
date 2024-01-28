@@ -7,7 +7,7 @@ from torch.nn.utils.rnn import pad_sequence
 from utils.player_stat_utils import get_game_stats_by_player, get_player_stats
 from utils.team_stat_utils import get_team_stats
 from utils.misc_utils import get_all_teams
-from utils.processing_utils import get_team_previous_game_stats, get_player_data, get_game_date, check_if_game_before_today, get_game_today_for_player, get_last_game_for_team, get_last_game_for_player, get_opponent_id
+from utils.processing_utils import get_team_previous_game_stats, get_player_data, get_game_date, check_if_game_before_today, get_game_today_for_player, get_last_game_for_team, get_last_game_for_player, get_opponent_id, get_next_opponent_id
 
 from matplotlib import pyplot as plt
 import numpy as np
@@ -74,8 +74,6 @@ with torch.no_grad():
                     cursor.execute("select player_name from player_stats where player_id = {player_id} and team_id = {team_id};".format(player_id=player[0], team_id=team))
                     player_name = cursor.fetchall()[0]
 
-                    print(player_name[0])
-
                     last_game_id = get_last_game_for_player(cursor, player)
 
                     data = []
@@ -92,7 +90,7 @@ with torch.no_grad():
                     for value in team_previous_game_stats[2:]:
                         data.append(value)
 
-                    opponent_id = get_opponent_id(game_today, team)
+                    opponent_id = get_next_opponent_id(game_today, team)
 
                     opponent_previous_game_id = get_last_game_for_team(cursor, opponent_id)
 
@@ -113,6 +111,6 @@ with torch.no_grad():
 
                             list_preds = prediction.tolist()
 
-                            if list_preds[0][0] > 10.0 or list_preds[0][2] > 4.0:
+                            print(player_name[0])
 
-                                print("Prediction: " + str(list_preds[0][0]) + " points, " + str(list_preds[0][1]) + " assists, " + str(list_preds[0][2]) + " rebounds" )    
+                            print("Prediction: " + str(list_preds[0][0]) + " points, " + str(list_preds[0][1]) + " assists, " + str(list_preds[0][2]) + " rebounds" )    

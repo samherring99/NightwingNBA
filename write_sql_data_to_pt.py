@@ -30,23 +30,23 @@ cursor = conn.cursor()
 
 def get_context_for_game(game_id, player_id):
 
-    player_team_id = get_team_for_player(player_id)
+    player_team_id = get_team_for_player(player_id, cursor)
 
-    player_previous_game_id = get_previous_game_id(game_id, player_team_id)
+    player_previous_game_id = get_previous_game_id(game_id, player_team_id, cursor)
 
-    player_previous_game_stats = get_player_data(player_previous_game_id, player_id)
+    player_previous_game_stats = get_player_data(player_previous_game_id, player_id, cursor)
 
     if player_previous_game_stats:
 
-        team_previous_game_id = get_previous_game_id(game_id, team_previous_game_id)
+        team_previous_game_id = get_previous_game_id(game_id, team_previous_game_id, cursor)
 
-        team_previous_game_stats = get_team_previous_game_stats(team_previous_game_id, player_team_id)
+        team_previous_game_stats = get_team_previous_game_stats(team_previous_game_id, player_team_id, cursor)
 
-        opposing_team = get_opponent_id(game_id, player_team_id)
+        opposing_team = get_opponent_id(game_id, player_team_id, cursor)
 
-        opposing_team_previous_game_id = get_previous_game_id(game_id, opposing_team)
+        opposing_team_previous_game_id = get_previous_game_id(game_id, opposing_team, cursor)
 
-        opponent_previous_game_stats = get_team_previous_game_stats(opposing_team_previous_game_id, opposing_team)
+        opponent_previous_game_stats = get_team_previous_game_stats(opposing_team_previous_game_id, opposing_team, cursor)
 
         return [player_previous_game_stats, team_previous_game_stats[2:], opponent_previous_game_stats[2:]]
 

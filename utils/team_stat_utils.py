@@ -2,8 +2,7 @@ import requests
 import time
 from datetime import datetime
 
-# TODO finish building out the teams stats table
-
+# Get team statistics for a game given a game ID and a team ID
 def get_team_stats(game_id, team_id):
     team_stats_endpoint = "https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/events/{game_id}/competitions/{game_id}/competitors/{team_id}/statistics".format(game_id=game_id, team_id=team_id)
     team_stats_response = requests.get(team_stats_endpoint)
@@ -18,6 +17,7 @@ def get_team_stats(game_id, team_id):
 
     return team_dict
 
+# Get the team stats for a given game ID given the game date.
 def get_game_stats_for_teams(game_id, game_date):
     if datetime.strptime(game_date, '%Y-%m-%dT%H:%MZ') < datetime.today():
         teams_stats_endpoint = "https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/events/{game_id}/competitions/{game_id}/competitors/".format(game_id=game_id)

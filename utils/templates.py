@@ -1,7 +1,9 @@
+# Template to get the list of players in 
 roster_template = '''
 SELECT player_id FROM player_stats WHERE team_id = {team_id};
 '''
 
+# Player stats template minus the DATE object to avoid string casting issues
 player_template = '''
 SELECT 
 blocks,
@@ -102,22 +104,28 @@ a40
  FROM player_stats WHERE game_id = {game_id} AND player_id = {player_id};
 '''
 
+# Get team IDs in a matchup from the database given the game ID
 matchup_template = '''
 select t.team_id from player_stats p JOIN team_stats t on p.game_id = t.game_id WHERE p.game_id = {game_id} group by t.team_id;
 '''
 
+# Get the name of the game for the matchup given the game ID
 game_template = '''
 SELECT game_name from player_stats where game_id = {game_id}
 '''
 
+# Get the team stats given a game ID and a team ID
 team_template = '''
 SELECT * FROM team_stats WHERE game_id = {game_id} and team_id = {team_id}
 '''
 
+# Get the team ID for a player given their player ID
 get_player_team = '''
 select team_id from player_stats where player_id = {player_id} group by team_id
 '''
 
+# Get the list of game IDs sorted by date for a given team ID, where the game date is before the date
+# of a given game ID
 get_team_previous_game = '''
 select game_id from player_stats where game_date <= (select game_date from player_stats where game_id = {game_id}) and team_id = {team_id} group by game_date order by game_date;
 '''
