@@ -1,6 +1,6 @@
 # Template to get the list of players in 
 roster_template = '''
-SELECT player_id FROM player_stats WHERE team_id = {team_id};
+SELECT player_id FROM player_stats WHERE team_id = {team_id} GROUP BY player_id;
 '''
 
 # Player stats template minus the DATE object to avoid string casting issues
