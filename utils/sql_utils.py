@@ -246,7 +246,7 @@ def write_entry_to_team_db(entry, cursor):
 # and slashes, return the result
 def collect_table_stats(table_stats):
     table_stat = ""
-    for piece in table_stat_pieces:
+    for piece in table_stats:
         table_stat = table_stat + piece.lower() + "_"
     table_stat = table_stat[0:len(table_stat)-1].replace('-','_')
     table_stat = table_stat.replace('/','')
