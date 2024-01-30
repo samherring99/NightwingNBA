@@ -242,45 +242,64 @@ def write_entry_to_team_db(entry, cursor):
     else:
         print("Skipping this game")
 
-# TODO maybe split the below code into smaller methods
+# Given a list of pieces of a table statistic, remove underscores, capitalization, 
+# and slashes, return the result
+def collect_table_stats(table_stats):
+    table_stat = ""
+    for piece in table_stat_pieces:
+        table_stat = table_stat + piece.lower() + "_"
+    table_stat = table_stat[0:len(table_stat)-1].replace('-','_')
+    table_stat = table_stat.replace('/','')
+
+    return table_stat
 
 # Top level method to write player stats data to the player stats database
 # Player stats is in the form of the JSON response from the player data API endpoint
 # Returns the game date
 def write_players_data_to_db(player_stats, cursor):
+
+    # Get game data points -> ID, name, date
     game_name = player_stats['game_name']
     game_id = player_stats['game_id']
     game_date = player_stats['date']
 
+    # Get the matchup of the teams playing in this game
     team_names = game_name.split(" at ")
 
+    # Iterate over both teams in the matchup
     for team in team_names:
         team_name = team.split(" ")[-1]
+        # If the team name matches the name of the player's team
         if team_name in player_stats:
+            # Get the team's player stats for the current team
             team_player_stats = player_stats[team_name]
+            # If we have stats data
             if team_player_stats:
                 team_id = team_player_stats['team_id']
+                # Iterate over the players in the team
                 for key in team_player_stats.keys():
+                    # If we have a valid player
                     if key != 'team_id' and 'player_id' in team_player_stats[key]:
                         player_name = key
                         player_id = team_player_stats[key]['player_id']
 
+                        # Create an entry for the database
+
                         entry = {'game_name' : game_name, 'game_id' : game_id, 'game_date' : game_date, 'team_name' : team_name, 'team_id' : team_id, 'player_name' : player_name, 'player_id' : player_id}
 
+                        # Add player stats to the entry
                         for stat in team_player_stats[key]:
                             entry['player_id'] = player_id
                             if stat != 'player_id':
                                 table_stat_pieces = stat.split(" ")
-                                table_stat = ""
-                                for piece in table_stat_pieces:
-                                    table_stat = table_stat + piece.lower() + "_"
-                                table_stat = table_stat[0:len(table_stat)-1].replace('-','_')
-                                table_stat = table_stat.replace('/','')
+                                table_stat = collect_table_stats(table_stat_pieces)
 
                                 if table_stat[0].isnumeric():
                                     table_stat = "s_" + table_stat
-
+                                
+                                # Build entry
                                 entry[table_stat] = team_player_stats[key][stat]
+                        # Write entry to database
                         write_entry_to_players_db(entry, cursor)
 
     return game_date
@@ -290,25 +309,26 @@ def write_players_data_to_db(player_stats, cursor):
 def write_team_data_to_db(team_stats, cursor):
     game_id = team_stats['game_id']
 
+    # Iterate over the teams in a given matchup
     for key in team_stats.keys():
         if key != 'game_id':
             team_id = key
 
             print("Writing game stats for game " + str(game_id) + " and team " + str(team_id))
 
+            # Create team data entry to be added to database
             entry = {'game_id' : game_id, 'team_id' : team_id}
 
+            # For statistic in team stats
             for stat in team_stats[team_id].keys():
                 if stat != 'team_id':
                     table_stat_pieces = stat.split(" ")
-                    table_stat = ""
-                    for piece in table_stat_pieces:
-                        table_stat = table_stat + piece.lower() + "_"
-                    table_stat = table_stat[0:len(table_stat)-1].replace('-','_')
-                    table_stat = table_stat.replace('/','')
+                    table_stat = collect_table_stats(table_stat_pieces)
 
                     if table_stat[0].isnumeric():
                         table_stat = "s_" + table_stat
 
+                    # Add statistic to entry
                     entry[table_stat] = team_stats[team_id][stat]
+            # Write entry to team database
             write_entry_to_team_db(entry, cursor)

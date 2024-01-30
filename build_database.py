@@ -15,10 +15,14 @@ cursor = conn.cursor()
 
 ENDPOINT="http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2024/teams/{team_id}/events?lang=en&region=us"
 
+# Given a page number and a team ID, hit the ESPN endpoint to get the team data for that page
 def get_team_data(page, team_id):
     team_games_response = requests.get(ENDPOINT.format(team_id=team_id), params={"page": page})
     team_game_data = team_games_response.json() 
 
+    return team_game_data
+
+# Iterate through all NBA teams, get the team data for each
 def iterate_teams(team_list, cursor, connection):
 
     seen_games = []
