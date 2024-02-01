@@ -111,6 +111,13 @@ with torch.no_grad():
 
                             list_preds = prediction.tolist()
 
+                            # TODO sort by time
+
+                            cursor.execute("SELECT game_name, team_name from player_stats where game_id = {game_id} and team_id = {team_id} group by game_name, team_name".format(game_id=game_today, team_id=team))
+                            game_name = cursor.fetchall()
+
+                            print(game_name)
+
                             print(player_name[0])
 
                             print("Prediction: " + str(list_preds[0][0]) + " points, " + str(list_preds[0][1]) + " assists, " + str(list_preds[0][2]) + " rebounds" )    
