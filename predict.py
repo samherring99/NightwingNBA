@@ -113,10 +113,10 @@ with torch.no_grad():
 
                             # TODO sort by time
 
-                            cursor.execute("SELECT game_name, team_name from player_stats where game_id = {game_id} and team_id = {team_id} group by game_name, team_name".format(game_id=game_today, team_id=team))
-                            game_name = cursor.fetchall()
+                            #cursor.execute("SELECT game_name, team_name from player_stats where game_id = {game_id} and team_id = {team_id} group by game_name, team_name".format(game_id=game_today, team_id=team))
+                            #game_name = cursor.fetchall()
 
-                            print(game_name)
+                            #print(game_name)
 
                             print(player_name[0])
 

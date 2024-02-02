@@ -10,14 +10,14 @@ import time
 ############################## BUILD DATABASE ##############################
 
 # Given all player's data and team data in JSON format, and a game ID, write it to the database
-def write_player_and_team_data(player_data, team_data, game_id, cursor):
+def write_player_and_team_data(player_data, game_id, cursor):
     write_players_data_to_db(player_data, cursor)
     print("Success adding player data!")
 
     game_team_stats = get_game_stats_for_teams(game_id, player_data['date']) 
 
     if game_team_stats:
-        write_team_data_to_db(team_data, cursor)
+        write_team_data_to_db(game_team_stats, cursor)
         print("Success adding team data!")
 
 # Given game data in JSON format and a list of seen games, process the game and write it to the database
@@ -27,7 +27,7 @@ def process_game(game, seen_games, cursor, conn):
         game_players_stats = get_game_stats_by_player(id_num)
 
         if game_players_stats:
-            write_player_and_team_data(game_players_stats, data, id_num, cursor)
+            write_player_and_team_data(game_players_stats, id_num, cursor)
 
         seen_games.append(id_num)
         conn.commit()
@@ -174,7 +174,7 @@ def get_game_date(game_id):
 
     game_dict = {'game_id' : game_id, 'date' : data['date'], 'game_name' : data['name']}
 
-    return game_dict['date']
+    return game_dict
 
 # Given a game date check if it is before today
 def check_if_game_before_today(game_date):
@@ -185,9 +185,11 @@ def find_game_today_in_team_data(data):
     for game in data['items']:
         id_num = str(game['$ref']).split("?")[0].split("/")[-1]
 
-        game_date = get_game_date(id_num)
+        game_data = get_game_date(id_num)
+        game_date = game_data['date']
 
         if check_if_game_before_today(game_date):
+            print(game_data['game_name'])
             return id_num
     return 0
 
