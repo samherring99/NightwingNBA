@@ -15,6 +15,8 @@ import sqlite3
 import requests
 from datetime import datetime, timedelta
 
+import json 
+
 from torch.optim.lr_scheduler import StepLR
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.nn import BatchNorm1d
@@ -54,6 +56,8 @@ model.load_state_dict(torch.load("./saved_data/weights.pth"))
 
 seen_players = []
 
+result_games = []
+
 model.eval()
 with torch.no_grad():
 
@@ -63,10 +67,18 @@ with torch.no_grad():
 
         game_today = get_game_today_for_player([team])
 
+        #print(game_today) # use as the key in dict
+
+        #cursor.execute("SELECT game_name from player_stats where game_id = {game_id} limit 1;".format(game_id=game_today))
+
+        team_list_stats = []
+
         if game_today:
 
             cursor.execute("SELECT player_id FROM player_stats WHERE team_id = {team_id};".format(team_id=team))
             roster = cursor.fetchall()
+
+            game_name = get_game_date(game_today)['game_name']
 
             for player in roster:
                 if player not in seen_players:
@@ -111,13 +123,31 @@ with torch.no_grad():
 
                             list_preds = prediction.tolist()
 
-                            # TODO sort by time
-
-                            #cursor.execute("SELECT game_name, team_name from player_stats where game_id = {game_id} and team_id = {team_id} group by game_name, team_name".format(game_id=game_today, team_id=team))
-                            #game_name = cursor.fetchall()
-
-                            #print(game_name)
+                            #print(game_name) # Add game name
 
                             print(player_name[0])
 
+
+                            team_list_stats.append({'player_name' : player_name[0], 'points' : str(list_preds[0][0]), 'assists' : str(list_preds[0][1]), 'rebounds' : str(list_preds[0][2])})
+                            #result_dict['teams'][str(team)] = result_dict['teams'][str(team)].append({'player_name' : player_name[0], 'points' : str(list_preds[0][0]), 'assists' : str(list_preds[0][1]), 'rebounds' : str(list_preds[0][2])})
+
+                            #print(team_list_stats)
+
                             print("Prediction: " + str(list_preds[0][0]) + " points, " + str(list_preds[0][1]) + " assists, " + str(list_preds[0][2]) + " rebounds" )    
+        
+            game_exists = [g for g in result_games if g['game_id'] == str(game_today)]
+
+            if len(game_exists) > 0:
+                index_of = result_games.index(game_exists[0])
+                result_games[index_of]['teams'][str(team)] = team_list_stats
+            else:
+                result_dict = {'game_id' : game_today, 'game_name' : game_name, 'teams' : {}}
+                result_dict['teams'][str(team)] = team_list_stats
+                result_games.append(result_dict)
+
+    #print(result_games)
+
+    with open("picks_today.json", "w") as outfile: 
+        json.dump(result_games, outfile, indent=2)
+
+        

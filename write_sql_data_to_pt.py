@@ -1,5 +1,6 @@
 from utils.misc_utils import get_all_teams
 from utils.processing_utils import get_opponent_id, get_previous_game_id, get_team_previous_game_stats, get_team_for_player, get_player_data, get_team_roster, get_games_for_team
+from utils.templates import player_template
 
 import sqlite3
 import requests
@@ -38,7 +39,7 @@ def get_context_for_game(game_id, player_id):
 
     if player_previous_game_stats:
 
-        team_previous_game_id = get_previous_game_id(game_id, team_previous_game_id, cursor)
+        team_previous_game_id = get_previous_game_id(game_id, player_team_id, cursor)
 
         team_previous_game_stats = get_team_previous_game_stats(team_previous_game_id, player_team_id, cursor)
 
@@ -94,7 +95,7 @@ def generate_data(team_list, cursor):
             for i in range(len(game_list)):
                 game_id_num = str(game_list[i]['$ref']).split("?")[0].split("/")[-1]
 
-                players = get_team_roster(team)
+                players = get_team_roster(team, cursor)
 
                 for player_id in players:                 
                     data = get_context_for_game(game_id_num, player_id[0])

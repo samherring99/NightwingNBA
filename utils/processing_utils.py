@@ -129,7 +129,7 @@ def get_player_data(game_id, player_id, cursor):
         return []
 
 # Get the roster for a given team ID, returns a list of player IDs
-def get_team_roster(team_id):
+def get_team_roster(team_id, cursor):
     cursor.execute(roster_template.format(team_id=team_id))
     players = cursor.fetchall()
 
@@ -167,12 +167,15 @@ def get_team_previous_game_stats(game_id, team_id, cursor):
         return team_previous_game_stats[0]
     else:
         return []
+        
 # Given a game ID get the game date
 def get_game_date(game_id):
     response = requests.get("http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/events/{game_id}?lang=en&region=us".format(game_id=game_id))
     data = response.json()
 
     game_dict = {'game_id' : game_id, 'date' : data['date'], 'game_name' : data['name']}
+
+    time.sleep(0.1)
 
     return game_dict
 
@@ -189,7 +192,7 @@ def find_game_today_in_team_data(data):
         game_date = game_data['date']
 
         if check_if_game_before_today(game_date):
-            print(game_data['game_name'])
+            print(game_data['game_name']) # Add game name to dict
             return id_num
     return 0
 
