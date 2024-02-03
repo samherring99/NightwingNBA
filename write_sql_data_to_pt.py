@@ -131,37 +131,11 @@ print(df.shape)
 # standardized_features = (features - feature_means) / feature_stds
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)  
-    
-### Neural network ###
-
-# Define the model
-class NeuralNetwork(nn.Module):
-    def __init__(self):
-        super(NeuralNetwork, self).__init__()
-        self.layer1 = nn.Linear(283, 128)  # Assuming all samples have the same number of features
-        self.layer2 = nn.Linear(128, 64)
-        self.layer3 = nn.Linear(64, 32)
-        self.output_layer = nn.Linear(32, 3)
-
-    def forward(self, x):
-        x = torch.relu(self.layer1(x))
-        x = torch.relu(self.layer2(x))
-        x = torch.relu(self.layer3(x))
-        x = self.output_layer(x)
-        return x
-
-# Create the model
-model = NeuralNetwork()
-
-# Loss and optimizer
-criterion = nn.MSELoss() 
-optimizer = Adam(model.parameters())
 
 X_train_padded = pad_sequence([torch.tensor(seq, dtype=torch.float32) for seq in X_train], batch_first=True)
 y_train_padded = pad_sequence([torch.tensor(seq, dtype=torch.float32) for seq in y_train], batch_first=True)
 X_test_padded = pad_sequence([torch.tensor(seq, dtype=torch.float32) for seq in X_test], batch_first=True)
 y_test_padded = pad_sequence([torch.tensor(seq, dtype=torch.float32) for seq in y_test], batch_first=True)
-
 
  #Convert data to PyTorch tensors
 X_train_torch = torch.tensor(X_train_padded, dtype=torch.float32)
@@ -169,13 +143,9 @@ y_train_torch = torch.tensor(y_train_padded, dtype=torch.float32)
 X_test_torch = torch.tensor(X_test_padded, dtype=torch.float32)
 y_test_torch = torch.tensor(y_test_padded, dtype=torch.float32)
 
-X_train_split, X_val_split, y_train_split, y_val_split = train_test_split(X_train_torch, y_train_torch, test_size=0.2, random_state=0)
-
 train_dataset = TensorDataset(X_train_split, y_train_split)
-
 val_dataset = TensorDataset(X_val_split, y_val_split)
 
-# Save the datasets - THIS IS ALL WE REALLY CARE ABOUT HERE
 torch.save(train_dataset, 'train_dataset.pt')
 torch.save(val_dataset, 'val_dataset.pt')
 torch.save(X_test_torch, 'X_test.pt')
