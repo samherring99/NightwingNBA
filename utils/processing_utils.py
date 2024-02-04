@@ -167,7 +167,7 @@ def get_team_previous_game_stats(game_id, team_id, cursor):
         return team_previous_game_stats[0]
     else:
         return []
-        
+
 # Given a game ID get the game date
 def get_game_date(game_id):
     response = requests.get("http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/events/{game_id}?lang=en&region=us".format(game_id=game_id))
@@ -181,6 +181,7 @@ def get_game_date(game_id):
 
 # Given a game date check if it is before today
 def check_if_game_before_today(game_date):
+    #TODO convert from UTC
     return (datetime.strptime(game_date, '%Y-%m-%dT%H:%MZ') - timedelta(days=1)).strftime('%Y-%m-%d') == datetime.today().strftime('%Y-%m-%d')
 
 # Given a list of games find the game that is happening today, return the ID if so, return 0 if no games are happening today
