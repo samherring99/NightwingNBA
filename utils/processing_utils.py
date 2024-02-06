@@ -181,8 +181,14 @@ def get_game_date(game_id):
 
 # Given a game date check if it is before today
 def check_if_game_before_today(game_date):
-    #TODO convert from UTC
-    return (datetime.strptime(game_date, '%Y-%m-%dT%H:%MZ') - timedelta(days=1)).strftime('%Y-%m-%d') == datetime.today().strftime('%Y-%m-%d')
+
+    epoch = time.mktime(datetime.strptime(game_date, '%Y-%m-%dT%H:%MZ').timetuple())
+    offset = datetime.fromtimestamp(epoch) - datetime.utcfromtimestamp(epoch)
+
+    print(datetime.strptime(game_date, '%Y-%m-%dT%H:%MZ') + offset)
+
+    return datetime.strptime(game_date, '%Y-%m-%dT%H:%MZ') + offset == datetime.today().strftime('%Y-%m-%d')
+    #return (datetime.strptime(game_date, '%Y-%m-%dT%H:%MZ') - timedelta(days=1)).strftime('%Y-%m-%d') == datetime.today().strftime('%Y-%m-%d')
 
 # Given a list of games find the game that is happening today, return the ID if so, return 0 if no games are happening today
 def find_game_today_in_team_data(data):
