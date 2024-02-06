@@ -67,10 +67,6 @@ with torch.no_grad():
 
         game_today = get_game_today_for_player([team])
 
-        #print(game_today) # use as the key in dict
-
-        #cursor.execute("SELECT game_name from player_stats where game_id = {game_id} limit 1;".format(game_id=game_today))
-
         team_list_stats = []
 
         if game_today:
@@ -123,15 +119,9 @@ with torch.no_grad():
 
                             list_preds = prediction.tolist()
 
-                            #print(game_name) # Add game name
-
                             print(player_name[0])
 
-
                             team_list_stats.append({'player_name' : player_name[0], 'points' : str(list_preds[0][0]), 'assists' : str(list_preds[0][1]), 'rebounds' : str(list_preds[0][2])})
-                            #result_dict['teams'][str(team)] = result_dict['teams'][str(team)].append({'player_name' : player_name[0], 'points' : str(list_preds[0][0]), 'assists' : str(list_preds[0][1]), 'rebounds' : str(list_preds[0][2])})
-
-                            #print(team_list_stats)
 
                             print("Prediction: " + str(list_preds[0][0]) + " points, " + str(list_preds[0][1]) + " assists, " + str(list_preds[0][2]) + " rebounds" )    
         
