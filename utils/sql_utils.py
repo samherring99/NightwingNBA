@@ -284,6 +284,7 @@ def write_players_data_to_db(player_stats, cursor):
                         player_id = team_player_stats[key]['player_id']
 
                         # Create an entry for the database
+                        # TODO cast game date with a string type ot something better, check table definition too
 
                         entry = {'game_name' : game_name, 'game_id' : game_id, 'game_date' : game_date, 'team_name' : team_name, 'team_id' : team_id, 'player_name' : player_name, 'player_id' : player_id}
 
